@@ -1,0 +1,10 @@
+
+# idea
+.idea/
+.idea_modules/
+
+# poetry
+poetry.lock
+
+# venv
+.venv/
