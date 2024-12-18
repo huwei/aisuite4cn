@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "aisuite4cn"
 version = "0.1.0"
-description = ""
+description = "Uniform access layer for LLMs of China"
 authors = ["胡伟 <3314672@qq.com>"]
 readme = "README.md"
 
