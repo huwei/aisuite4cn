@@ -10,6 +10,73 @@
 moonshot（月之暗面）、Doubao（火山引擎）、Qwen（阿里云千问大模型）。
 
 
+## 安装
+
+你可以只安装基础的 `aisuite4cn` 包，这只会安装基础包，而不会安装任何提供商的SDK。
+或者同时安装某个提供商的包和 `aisuite4cn`包。
+
+请注意，在 create() 调用中的模型名称使用格式为 `<provider>:<model-name>`。 
+`aisuite4cn` 将根据提供商值调用相应的提供商并传递正确的参数。 
+提供商值的列表可以在目录 `aisuite4cn/providers/` 中找到。
+支持的提供商的格式为该目录下的 `<provider>_provider.py`。
+
+
+## License
+`aisuite4cn` 在 MIT 许可证下发布。您可以自由地将代码用于商业和非商业目的。
+
+```shell
+pip install aisuite4cn
+```
+
+安装通义千问大模型供应商的包
+
+```shell
+pip install 'aisuite4cn[qwen]'
+```
+
+安装所有大模型供应商的包
+
+```shell
+pip install 'aisuite4cn[all]'
+```
+
+## 配置
+你需要为你打算使用的提供商获取 API 密钥。你需要单独安装或在安装 `aisuite4cn` 时安装特定提供商的库。
+API 密钥可以设置为环境变量，也可以作为配置传递给 `aisuite4cn` 客户端构造函数。你可以使用工具如 `python-dotenv` 或 `direnv` 来手动设置环境变量。
+以下是一个简短的示例，展示如何使用 `aisuite4cn` 从 qwen 和 moonshot 生成聊天完成响应。
+
+设置API keys.
+
+```shell
+export MOONSHOT_API_KEY="your-moonshot-api-key" # 月之暗面开放平台api-key，支持moonshot
+export DASHSCOPE_API_KEY="your-dashscope-api-key" # 百炼平台api-key，支持qwen
+export ARK_API_KEY = "your-ark-api-key" #火山引擎api-key，支持doubao
+```
+
+使用python客户端
+```python
+import aisuite4cn as ai
+client = ai.Client()
+
+models = ["qwen:qwen-max", 
+          "volcengine:your-model-endpoint-id",
+          "moonshot:moonshot-v1-8k"]
+
+messages = [
+    {"role": "system", "content": "Respond in Pirate English."},
+    {"role": "user", "content": "Tell me a joke."},
+]
+
+for model in models:
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        temperature=0.75
+    )
+    print(response.choices[0].message.content)
+
+```
+
 ## Integrated Open source project
 Special thanks to all contributors
 
