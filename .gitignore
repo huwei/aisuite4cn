@@ -11,3 +11,7 @@ publish.sh
 
 # venv
 .venv/
+
+
+# pack
+dist/
