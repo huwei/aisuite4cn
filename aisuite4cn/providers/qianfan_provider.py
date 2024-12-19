@@ -7,7 +7,6 @@ from pydantic import BaseModel
 
 from aisuite4cn.provider import Provider, LLMError
 
-import qianfan
 from qianfan.resources.console.iam import IAM
 
 
@@ -73,7 +72,7 @@ class QianfanProvider(Provider):
 
     def chat_completions_create(self, model, messages, **kwargs):
         self.client.api_key = self.get_bearer_token()
-        # Any exception raised by Moonshot will be returned to the caller.
+        # Any exception raised by Qianfan will be returned to the caller.
         # Maybe we should catch them and raise a custom LLMError.
         return self.client.chat.completions.create(
             model=model,
