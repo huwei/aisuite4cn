@@ -19,6 +19,7 @@ moonshot = ["openai"]
 ark = ["openai"]
 qwen = ["openai"]
 qianfan = ["qianfan"]
+hunyuan = ["openai"]
 all = ["openai", "qianfan"]
 
 [tool.poetry.group.dev.dependencies]
