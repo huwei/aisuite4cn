@@ -12,6 +12,12 @@ publish.sh
 # venv
 .venv/
 
+# env
+.env
+
+# samples
+samples/
+samples/**
 
 # pack
 dist/

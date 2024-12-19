@@ -5,9 +5,9 @@ import os
 from aisuite4cn.provider import Provider, LLMError
 
 
-class VolcengineProvider(Provider):
+class ArkProvider(Provider):
     """
-    火山引擎方舟大模型服务平台提供者
+    ByteDance Ark Provider
     """
     def __init__(self, **config):
         """
@@ -15,22 +15,19 @@ class VolcengineProvider(Provider):
         Pass the entire configuration dictionary to the Volcengine client constructor.
         """
         # Ensure API key is provided either in config or via environment variable
-        self.api_key = config.get("api_key") or os.getenv("ARK_API_KEY")
+        self.config = dict(config)
+        self.api_key = self.config.pop("api_key", None) or os.getenv("ARK_API_KEY")
 
         if not self.api_key:
             raise ValueError(
                 "Ark API key is missing. Please provide it in the config or set the OPENAI_API_KEY environment variable."
             )
-        self.config = config
-
-        kvargs = dict(config)
-        kvargs.pop("api_key")
         # Pass the entire config to the Ark client constructor
 
         self.client = openai.OpenAI(
             api_key=self.api_key,
             base_url="https://ark.cn-beijing.volces.com/api/v3",
-            **kvargs)
+            **self.config)
 
     def chat_completions_create(self, model, messages, **kwargs):
 

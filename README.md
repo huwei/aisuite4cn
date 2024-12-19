@@ -1,5 +1,7 @@
 # aisuite4cn
 
+[![PyPI](https://img.shields.io/pypi/v/aisuite4cn)](https://pypi.org/project/aisuite4cn/)
+
 简单、统一的接口，可连接多个生成式人工智能提供商。
 
 `aisuite4cn` 针对于中国的各类大模型厂商提供通用的支持。学习了`aisuite`方案，并开发了该库。
@@ -17,12 +19,8 @@ moonshot（月之暗面）、Doubao（火山引擎）、Qwen（阿里云千问�
 
 请注意，在 create() 调用中的模型名称使用格式为 `<provider>:<model-name>`。 
 `aisuite4cn` 将根据提供商值调用相应的提供商并传递正确的参数。 
-提供商值的列表可以在目录 `aisuite4cn/providers/` 中找到。
+提供商的列表可以在目录 `aisuite4cn/providers/` 中找到。
 支持的提供商的格式为该目录下的 `<provider>_provider.py`。
-
-
-## License
-`aisuite4cn` 在 MIT 许可证下发布。您可以自由地将代码用于商业和非商业目的。
 
 ```shell
 pip install aisuite4cn
@@ -59,7 +57,7 @@ import aisuite4cn as ai
 client = ai.Client()
 
 models = ["qwen:qwen-max", 
-          "volcengine:your-model-endpoint-id",
+          "ark:your-model-endpoint-id",
           "moonshot:moonshot-v1-8k"]
 
 messages = [
@@ -76,6 +74,10 @@ for model in models:
     print(response.choices[0].message.content)
 
 ```
+
+## License
+`aisuite4cn` 在 MIT 许可证下发布。您可以自由地将代码用于商业和非商业目的。
+
 
 ## Integrated Open source project
 Special thanks to all contributors

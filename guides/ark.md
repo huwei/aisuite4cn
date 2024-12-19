@@ -27,7 +27,7 @@ In your code:
 import aisuite4cn as ai
 client = ai.Client()
 
-provider = "volcengine"
+provider = "ark"
 model_endpoint_id = "your-model-endpoint-id"
 
 messages = [
