@@ -1,7 +1,8 @@
-#  Volcengine AI（火山引擎方舟大模型服务平台）
+#  Ark AI（火山引擎方舟大模型服务平台）
 
 To use Volcengine AI with `aisuite4cn`, you’ll need an [Volcengine account](https://console.volcengine.com/ark). 
 After logging in, go to the [API Keys](https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey) section in your account settings and generate a new key. 
+
 Once you have your key, add it to your environment as follows:
 
 ```shell
@@ -42,3 +43,5 @@ response = client.chat.completions.create(
 
 print(response.choices[0].message.content)
 ```
+
+
