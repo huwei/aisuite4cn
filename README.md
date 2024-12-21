@@ -54,8 +54,10 @@ API 密钥可以设置为环境变量，也可以作为配置传递给 `aisuite4
 export MOONSHOT_API_KEY="your-moonshot-api-key" # 月之暗面开放平台api-key，支持moonshot
 export DASHSCOPE_API_KEY="your-dashscope-api-key" # 百炼平台api-key，支持qwen
 export ARK_API_KEY = "your-ark-api-key" #火山引擎api-key，支持doubao
-export HUNYUAN_API_KEY = "your-hunyuan-api-key" #火山引擎api-key，支持doubao
-export ZHIPUAI_API_KEY = "your-zhipuai-api-key" #火山引擎api-key，支持doubao
+export HUNYUAN_API_KEY = "your-hunyuan-api-key" #腾讯混元api-key，支持混元
+export ZHIPUAI_API_KEY = "your-zhipuai-api-key" #智谱AI api-key，支持Glm
+export QIANFAN_ACCESS_KEY = "your-qianfan-access-key" #百度千帆 access key，支持文心一言
+export QIANFAN_SECRET_KEY = "your-qianfan-secret-key" #百度千帆 secret key，支持文心一言
 ```
 
 使用python客户端
