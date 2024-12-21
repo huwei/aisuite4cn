@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aisuite4cn"
-version = "0.1.4"
+version = "0.1.5"
 description = "Uniform access layer for LLMs of China"
 authors = ["胡伟 <3314672@qq.com>"]
 readme = "README.md"
@@ -36,6 +36,7 @@ optional = true
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"
 pytest-cov = "^6.0.0"
+python-dotenv = "^1.0.1"
 
 [build-system]
 requires = ["poetry-core"]

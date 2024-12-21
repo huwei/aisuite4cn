@@ -68,7 +68,7 @@ client = ai.Client()
 models = ["qwen:qwen-max", 
           "ark:your-model-endpoint-id",
           "moonshot:moonshot-v1-8k",
-          "huanyuan:huanyuan-pro",
+          "hunyuan:hunyuan-standard",
           "qianfan:ernie-3.5-8k",
           "zhipuai:glm-4-flash"]
 

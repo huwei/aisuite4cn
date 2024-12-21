@@ -29,6 +29,7 @@ import aisuite4cn as ai
 client = ai.Client()
 
 provider = "ark"
+# go to https://console.volcengine.com/ark/region:ark+cn-beijing/endpoint  
 model_endpoint_id = "your-model-endpoint-id"
 
 messages = [
