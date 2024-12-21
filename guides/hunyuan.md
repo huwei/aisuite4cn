@@ -29,7 +29,7 @@ import aisuite4cn as ai
 client = ai.Client()
 
 provider = "hunyuan"
-model_id = "hunyuan-pro"
+model_id = "hunyuan-standard"
 
 messages = [
     {"role": "system", "content": "You are a helpful assistant."},

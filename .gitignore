@@ -19,5 +19,12 @@ publish.sh
 samples/
 samples/**
 
-# pack
+# python
 dist/
+*.pyc
+**/**.pyc
+__pycache__/
+.pytest_cache/
+.coverage
+coverage.xml
+.mypy_cache/
