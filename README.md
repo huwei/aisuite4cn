@@ -55,6 +55,7 @@ export MOONSHOT_API_KEY="your-moonshot-api-key" # 月之暗面开放平台api-ke
 export DASHSCOPE_API_KEY="your-dashscope-api-key" # 百炼平台api-key，支持qwen
 export ARK_API_KEY = "your-ark-api-key" #火山引擎api-key，支持doubao
 export HUNYUAN_API_KEY = "your-hunyuan-api-key" #火山引擎api-key，支持doubao
+export ZHIPUAI_API_KEY = "your-zhipuai-api-key" #火山引擎api-key，支持doubao
 ```
 
 使用python客户端
@@ -66,7 +67,8 @@ models = ["qwen:qwen-max",
           "ark:your-model-endpoint-id",
           "moonshot:moonshot-v1-8k",
           "huanyuan:huanyuan-pro",
-          "qianfan:ernie-3.5-8k"]
+          "qianfan:ernie-3.5-8k",
+          "zhipuai:glm-4-flash"]
 
 messages = [
     {"role": "system", "content": "Respond in Pirate English."},
