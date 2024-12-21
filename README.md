@@ -14,7 +14,7 @@ Doubao（火山引擎方舟大模型服务平台）、
 Qwen（阿里云千问大模型）、
 Hunyuan（腾讯混元大模型）、
 Ernie（百度文心一言）、
-Zhipu（BigModel智谱AI大模型开放平台）
+ZhipuAI（BigModel智谱AI大模型开放平台）
 
 
 ## 安装
