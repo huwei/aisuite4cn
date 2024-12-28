@@ -55,9 +55,10 @@ export MOONSHOT_API_KEY="your-moonshot-api-key" # 月之暗面开放平台api-ke
 export DASHSCOPE_API_KEY="your-dashscope-api-key" # 百炼平台api-key，支持qwen
 export ARK_API_KEY = "your-ark-api-key" #火山引擎api-key，支持doubao
 export HUNYUAN_API_KEY = "your-hunyuan-api-key" #腾讯混元api-key，支持混元
-export ZHIPUAI_API_KEY = "your-zhipuai-api-key" #智谱AI api-key，支持Glm
+export ZHIPUAI_API_KEY = "your-zhipuai-api-key" #智谱AI api-key，支持ChatGLM
 export QIANFAN_ACCESS_KEY = "your-qianfan-access-key" #百度千帆 access key，支持文心一言
 export QIANFAN_SECRET_KEY = "your-qianfan-secret-key" #百度千帆 secret key，支持文心一言
+export DEEPSEEK_API_KEY="your-deepseek-api-key" # deepseek开放平台api-key，支持deepseek
 ```
 
 使用python客户端
@@ -70,7 +71,9 @@ models = ["qwen:qwen-max",
           "moonshot:moonshot-v1-8k",
           "hunyuan:hunyuan-standard",
           "qianfan:ernie-3.5-8k",
-          "zhipuai:glm-4-flash"]
+          "zhipuai:glm-4-flash",
+          "deepseek:deepseek-chat",
+          ]
 
 messages = [
     {"role": "system", "content": "Respond in Pirate English."},
