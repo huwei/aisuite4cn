@@ -54,11 +54,13 @@ API 密钥可以设置为环境变量，也可以作为配置传递给 `aisuite4
 export MOONSHOT_API_KEY="your-moonshot-api-key" # 月之暗面开放平台api-key，支持moonshot
 export DASHSCOPE_API_KEY="your-dashscope-api-key" # 百炼平台api-key，支持qwen
 export ARK_API_KEY = "your-ark-api-key" #火山引擎api-key，支持doubao
+export ARK_MODEL_MAP = "modlename1=endpointID&modlename2=endpointID" #火山引擎model map
 export HUNYUAN_API_KEY = "your-hunyuan-api-key" #腾讯混元api-key，支持混元
 export ZHIPUAI_API_KEY = "your-zhipuai-api-key" #智谱AI api-key，支持ChatGLM
 export QIANFAN_ACCESS_KEY = "your-qianfan-access-key" #百度千帆 access key，支持文心一言
 export QIANFAN_SECRET_KEY = "your-qianfan-secret-key" #百度千帆 secret key，支持文心一言
 export DEEPSEEK_API_KEY="your-deepseek-api-key" # deepseek开放平台api-key，支持deepseek
+export SPARK_API_KEY_MAP = "modlename1=your-modelname1-api-key&modlename2=your-modelname1-api-key"
 ```
 
 使用python客户端
@@ -66,14 +68,17 @@ export DEEPSEEK_API_KEY="your-deepseek-api-key" # deepseek开放平台api-key，
 import aisuite4cn as ai
 client = ai.Client()
 
-models = ["qwen:qwen-max", 
-          "ark:your-model-endpoint-id",
-          "moonshot:moonshot-v1-8k",
-          "hunyuan:hunyuan-standard",
-          "qianfan:ernie-3.5-8k",
-          "zhipuai:glm-4-flash",
-          "deepseek:deepseek-chat",
-          ]
+models = [
+    "spark:4.0Ultra",
+    "spark:generalv3",
+    "ark:Doubao-pro-32k",
+    "qwen:qwen-max",
+    "moonshot:moonshot-v1-8k",
+    "hunyuan:hunyuan-standard",
+    "qianfan:ernie-3.5-8k",
+    "zhipuai:glm-4-flash",
+    "deepseek:deepseek-chat"
+]
 
 messages = [
     {"role": "system", "content": "Respond in Pirate English."},
