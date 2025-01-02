@@ -1,33 +1,37 @@
+from urllib.parse import parse_qs
+
 import openai
 import os
 from aisuite4cn.provider import Provider, LLMError
 
 
-class MoonshotProvider(Provider):
+class SparkProvider(Provider):
     """
     Moonshot Provider
     """
     def __init__(self, **config):
         """
-        Initialize the Moonshot provider with the given configuration.
-        Pass the entire configuration dictionary to the Moonshot client constructor.
+        Initialize the Spark provider with the given configuration.
+        Pass the entire configuration dictionary to the Spark client constructor.
         """
         # Ensure API key is provided either in config or via environment variable
 
         self.config = dict(config)
-        self.config.setdefault("api_key", os.getenv("MOONSHOT_API_KEY"))
-        if not self.config['api_key']:
-            raise ValueError(
-                "Moonshot API key is missing. Please provide it in the config or set the MOONSHOT_API_KEY environment variable."
-            )
-        # Pass the entire config to the Moonshot client constructor
+        env_api_key_map = {k: v[0] for k, v in parse_qs(os.getenv("SPARK_API_KEY_MAP", "")).items()}
+        self.api_key_map=self.config.pop("api_key_map", env_api_key_map)
         self.client = openai.OpenAI(
-            base_url = "https://api.moonshot.cn/v1",
+            api_key="default",
+            base_url = "https://spark-api-open.xf-yun.com/v1",
             **self.config)
 
     def chat_completions_create(self, model, messages, **kwargs):
         # Any exception raised by Moonshot will be returned to the caller.
         # Maybe we should catch them and raise a custom LLMError.
+        if not self.api_key_map[model]:
+            raise ValueError(
+                "Spark API key is missing. Please provide it in the config or set the SPARK_API_KEY_MAP environment variable."
+            )
+        self.client.api_key = self.api_key_map[model]
         return self.client.chat.completions.create(
             model=model,
             messages=messages,

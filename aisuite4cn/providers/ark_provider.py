@@ -17,19 +17,18 @@ class ArkProvider(Provider):
         """
         # Ensure API key is provided either in config or via environment variable
         self.config = dict(config)
-        self.api_key = self.config.pop("api_key", None) or os.getenv("ARK_API_KEY")
-        self.model_map:dict = self.config.get("model_map", None)
-        env_dict = parse_qs(os.getenv("ARK_MODEL_MAP", ""))
-        self.model_map = {k: v[0] for k, v in env_dict.items()}
-
-        if not self.api_key:
+        self.config.setdefault("api_key", os.getenv("ARK_API_KEY"))
+        env_model_map_dict = parse_qs(os.getenv("ARK_MODEL_MAP", ""))
+        env_model_map = {k: v[0] for k, v in env_model_map_dict.items()}
+        self.config.setdefault("model_map", env_model_map)
+        self.model_map = self.config.pop("model_map", {})
+        if not self.config["api_key"]:
             raise ValueError(
                 "Ark API key is missing. Please provide it in the config or set the ARK_API_KEY environment variable."
             )
         # Pass the entire config to the Ark client constructor
 
         self.client = openai.OpenAI(
-            api_key=self.api_key,
             base_url="https://ark.cn-beijing.volces.com/api/v3",
             **self.config)
 
@@ -39,9 +38,9 @@ class ArkProvider(Provider):
         # Maybe we should catch them and raise a custom LLMError.
 
         if not model.startswith("ep-"):
-            real_model = self.model_map.get(model, None)
-            if real_model is None:
-                raise ValueError("The model name must be the endpoint ID of the model.")
+            if not self.model_map[model]:
+                raise ArgumentError("config['model_map'] does not have a corresponding model name.")
+            real_model = self.model_map[model]
         else:
             real_model = model
         return self.client.chat.completions.create(

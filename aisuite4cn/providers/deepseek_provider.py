@@ -15,14 +15,13 @@ class DeepseekProvider(Provider):
         # Ensure API key is provided either in config or via environment variable
 
         self.config = dict(config)
-        self.api_key = self.config.pop("api_key", None) or os.getenv("DEEPSEEK_API_KEY")
-        if not self.api_key:
+        self.config.setdefault("api_key", os.getenv("DEEPSEEK_API_KEY"))
+        if not self.config['api_key']:
             raise ValueError(
                 "DeepSeek API key is missing. Please provide it in the config or set the DEEPSEEK_API_KEY environment variable."
             )
         # Pass the entire config to the DeepSeek client constructor
         self.client = openai.OpenAI(
-            api_key = self.api_key,
             base_url = "https://api.deepseek.com/v1",
             **self.config)
 

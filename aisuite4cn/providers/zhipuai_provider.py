@@ -17,14 +17,13 @@ class ZhipuaiProvider(Provider):
         # Ensure API key is provided either in config or via environment variable
 
         self.config = dict(config)
-        self.api_key = self.config.pop("api_key", None) or os.getenv("ZHIPUAI_API_KEY")
-        if not self.api_key:
+        self.config.setdefault("api_key", os.getenv("ZHIPUAI_API_KEY"))
+        if not self.config["api_key"]:
             raise ValueError(
                 "Zhipu API key is missing. Please provide it in the config or set the ZHIPUAI_API_KEY environment variable."
             )
         # Pass the entire config to the Zhipu client constructor
         self.client = zhipuai.ZhipuAI(
-            api_key = self.api_key,
             **self.config)
 
     def chat_completions_create(self, model, messages, **kwargs):

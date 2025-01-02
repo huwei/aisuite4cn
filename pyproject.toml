@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aisuite4cn"
-version = "0.1.6"
+version = "0.1.7"
 description = "Uniform access layer for LLMs of China"
 authors = ["胡伟 <3314672@qq.com>"]
 readme = "README.md"
@@ -23,6 +23,8 @@ qianfan = ["qianfan"]
 hunyuan = ["openai"]
 zhipuai = ["zhipuai"]
 deepseek = ["openai"]
+spark = ["openai"]
+
 all = ["openai", "qianfan", "zhipuai"]
 
 [tool.poetry.group.dev.dependencies]

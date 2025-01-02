@@ -37,8 +37,9 @@ class QianfanProvider(Provider):
         # Ensure access key and secret key is provided either in config or via environment variable
 
         self.config = dict(config)
-        self.access_key = self.config.pop("access_key", None) or os.getenv("QIANFAN_ACCESS_KEY")
-        self.secret_key = self.config.pop("secret_key", None) or os.getenv("QIANFAN_SECRET_KEY")
+
+        self.access_key = self.config.pop("access_key", os.getenv("QIANFAN_ACCESS_KEY"))
+        self.secret_key = self.config.pop("secret_key", os.getenv("QIANFAN_SECRET_KEY"))
         if not self.access_key:
             raise ValueError(
                 "Qainfan access key is missing. Please provide it in the config or set the QIANFAN_ACCESS_KEY environment variable."
