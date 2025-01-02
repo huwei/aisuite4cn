@@ -13,6 +13,16 @@ class SparkProvider(Provider):
         """
         Initialize the Spark provider with the given configuration.
         Pass the entire configuration dictionary to the Spark client constructor.
+        api_key_map Example:
+        {
+            "api_key_map": {
+                # Key is the model name, and value is the corresponding API password.
+                # This mapping allows you to specify different API passwords for different models.
+                # Example:
+                "4.0Ultra":"your-4.0Ultra-APIPassword", # API password for the 4.0Ultra model
+                "generalv3":"your-generalv3-APIPassword" # API password for the generalv3 model
+            }
+        }
         """
         # Ensure API key is provided either in config or via environment variable
 
