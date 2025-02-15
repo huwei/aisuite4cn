@@ -29,8 +29,12 @@ class ZhipuaiProvider(Provider):
     def chat_completions_create(self, model, messages, **kwargs):
         # Any exception raised by Zhipu will be returned to the caller.
         # Maybe we should catch them and raise a custom LLMError.
+        cpkwargs = dict(kwargs)
+        # Note: Zhipu does not support the frequency_penalty and presence_penalty parameters.
+        cpkwargs.pop('frequency_penalty', None)
+        cpkwargs.pop('presence_penalty', None)
         return self.client.chat.completions.create(
             model=model,
             messages=messages,
-            **kwargs  # Pass any additional arguments to the Zhipu API
+            **cpkwargs  # Pass any additional arguments to the Zhipu API
         )
