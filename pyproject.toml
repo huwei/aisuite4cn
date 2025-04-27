@@ -6,7 +6,7 @@ authors = ["胡伟 <3314672@qq.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = ">=3.9,<3.12"
 pydantic = "^2.10.3"
 qianfan = { version = "^0.4.12.2", optional = true }
 openai = { version = "^1.35.8", optional = true }
