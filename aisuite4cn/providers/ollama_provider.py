@@ -16,7 +16,7 @@ class OllamaProvider(Provider):
         self.config = dict(config)
         self.config['api_key'] = "ollama"
 
-        self.base_url = self.config.pop("ollama_base_url", os.getenv("OLLAMA_BASE_URL"))
+        self.base_url = self.config.pop("base_url", os.getenv("OLLAMA_BASE_URL"))
         # Pass the entire config to the DeepSeek client constructor
         self.client = openai.OpenAI(
             base_url=self.base_url,

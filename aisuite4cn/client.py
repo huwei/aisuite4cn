@@ -91,8 +91,12 @@ class Completions:
                 f"Invalid model format. Expected 'provider:model', got '{model}'"
             )
 
-        # Extract the provider key from the model identifier, e.g., "google:gemini-xx"
-        provider_key, model_name = model.split(":", 1)
+        # Find the first ':' to split provider_key and model_name
+        separator_index = model.find(':')
+        if separator_index == -1:
+            raise ValueError("Model identifier must contain a ':' to specify the provider key and model name.")
+        provider_key = model[:separator_index]
+        model_name = model[separator_index + 1:]
 
         # Validate if the provider is supported
         supported_providers = ProviderFactory.get_supported_providers()

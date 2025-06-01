@@ -7,9 +7,9 @@ load_dotenv()
 
 client = ai.Client()
 
-provider = "deepseek"
-model_id = "deepseek-reasoner"
-# model_id = "deepseek-chat"
+provider = "ollama"
+# model_id = "deepseek-r1:70b"
+model_id = "qwen2.5:72b"
 
 messages = [
     {"role": "system", "content": "You are a helpful assistant."},
@@ -26,9 +26,6 @@ response = client.chat.completions.create(
 
 for chunk in response:
 
-    if chunk.choices[0].delta.reasoning_content:
-        print(chunk.choices[0].delta.reasoning_content, end='')
-
     if chunk.choices[0].delta.content:
         print(chunk.choices[0].delta.content, end='')
 
@@ -40,7 +37,5 @@ response = client.chat.completions.create(
     stream=False
 )
 
-print('reasoning_content:')
-print(response.choices[0].message.reasoning_content)
 print('content:')
 print(response.choices[0].message.content)
