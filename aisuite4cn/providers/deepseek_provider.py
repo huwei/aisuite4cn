@@ -1,10 +1,11 @@
-import io
 import json
+import os
 
 import openai
-import os
-from aisuite4cn.provider import Provider, LLMError
 from box import Box
+
+from aisuite4cn.provider import Provider
+
 
 class DeepseekProvider(Provider):
     """

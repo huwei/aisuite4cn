@@ -1,4 +1,5 @@
 import time
+from typing import Optional
 
 import openai
 import os
@@ -11,9 +12,9 @@ from qianfan.resources.console.iam import IAM
 
 
 class BearerToken(BaseModel):
-    user_id: str | None = None
-    token: str | None = None
-    status: str | None = None
+    user_id: Optional[str] = None
+    token: Optional[str] = None
+    status: Optional[str] = None
     create_time: float = 0
     expire_time: float = 0
 
@@ -25,9 +26,9 @@ class QianfanProvider(Provider):
     ref: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/em4tsqo3v
     """
 
-    access_key: str | None = None
-    secret_key: str | None = None
-    bearerToken: BearerToken | None = None
+    access_key: Optional[str] = None
+    secret_key: Optional[str] = None
+    bearerToken: Optional[BearerToken] = None
 
     def __init__(self, **config):
         """
