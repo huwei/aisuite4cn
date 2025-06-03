@@ -1,8 +1,10 @@
 import json
 import os
+from copy import deepcopy
 
 import openai
 from box import Box
+from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from aisuite4cn.provider import Provider
 
@@ -11,6 +13,7 @@ class DeepseekProvider(Provider):
     """
     DeepSeek Provider
     """
+
     def __init__(self, **config):
         """
         Initialize the DeepSeek provider with the given configuration.
@@ -26,7 +29,7 @@ class DeepseekProvider(Provider):
             )
         # Pass the entire config to the DeepSeek client constructor
         self.client = openai.OpenAI(
-            base_url = "https://api.deepseek.com/v1",
+            base_url="https://api.deepseek.com/v1",
             **self.config)
 
     def chat_completions_create(self, model, messages, **kwargs):
@@ -35,12 +38,16 @@ class DeepseekProvider(Provider):
         with_raw_response = model == "deepseek-reasoner"
         if with_raw_response:
             if not kwargs.get("stream", False):
-                raw_response = self.client.with_raw_response.chat.completions.create(
+                response = self.client.chat.completions.create(
                     model=model,
                     messages=messages,
                     **kwargs  # Pass any additional arguments to the DeepSeek API
                 )
-                return Box(json.loads(raw_response.text))
+                if response.choices[0].message.reasoning_content:
+                    response.choices[0].message.content = (f'<think>' +
+                                                           response.choices[0].message.reasoning_content +
+                                                           '<\\think>\n' + response.choices[0].message.content)
+                return response
             else:
                 response = self.client.with_streaming_response.chat.completions.create(
                     model=model,
@@ -56,18 +63,41 @@ class DeepseekProvider(Provider):
             )
 
     def _create_for_stream(self, response):
-        with response as raw_stream_response:
-            # 使用 TextIOWrapper 包装字节流，并指定编码为 UTF-8
-            for chunk in raw_stream_response.iter_bytes():
+        """
+        Create a generator for streaming DeepSeek responses.
+        :param response: response
+        :return: ChatCompletionChunk
+        """
+        has_think_counter = 0
+        has_set_end = False
+        with (response as raw_stream_response):
+            for chunk in raw_stream_response.iter_lines():
 
-                # 逐行读取
-                for line in chunk.decode('utf-8').split('\n'):
-                    line = line.strip()  # 去除首尾空白字符（包括换行符）
-                    if not line:
-                        # 跳过空行
-                        continue
-                    if line.startswith('data: [DONE]'):
-                        return
-                    if line.startswith('data: '):
-                        content = line[6:]
-                        yield Box(json.loads(content))
+                line = chunk.strip()  # 去除首尾空白字符（包括换行符）
+                if not line:
+                    # 跳过空行
+                    continue
+                if line.startswith('data: [DONE]'):
+                    return
+                if line.startswith('data: '):
+                    content = line[6:]
+                    json_dict = json.loads(content)
+                    box = Box(json_dict)
+                    chat_completion_chunk: ChatCompletionChunk = ChatCompletionChunk.model_validate(json_dict)
+
+                    if box.choices[0].delta.reasoning_content:
+                        has_think_counter += 1
+                        if has_think_counter == 1:
+                            chat_completion_chunk.choices[0].delta.content = '<think>'
+                            yield chat_completion_chunk
+                        chat_completion_chunk.choices[0].delta.content = box.choices[0].delta.reasoning_content
+                        yield chat_completion_chunk
+                    else:
+                        # 已经结束
+                        if has_think_counter >= 1 and not has_set_end:
+                            has_set_end = True
+                            think_end_chunk = deepcopy(chat_completion_chunk)
+                            think_end_chunk.choices[0].delta.content = '<\\think>\n'
+                            yield think_end_chunk
+
+                        yield chat_completion_chunk
