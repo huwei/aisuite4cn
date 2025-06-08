@@ -44,9 +44,13 @@ class DeepseekProvider(Provider):
                     **kwargs  # Pass any additional arguments to the DeepSeek API
                 )
                 if response.choices[0].message.reasoning_content:
-                    response.choices[0].message.content = (f'<think>' +
-                                                           response.choices[0].message.reasoning_content +
-                                                           '<\\think>\n' + response.choices[0].message.content)
+                    if kwargs.get("response_format", None) and \
+                        kwargs.get("response_format").get('type', None) == "json_object":
+                        return response
+                    else:
+                        response.choices[0].message.content = (f'<think>' +
+                                                               response.choices[0].message.reasoning_content +
+                                                               '<\\think>\n' + response.choices[0].message.content)
                 return response
             else:
                 response = self.client.with_streaming_response.chat.completions.create(
@@ -54,7 +58,7 @@ class DeepseekProvider(Provider):
                     messages=messages,
                     **kwargs  # Pass any additional arguments to the DeepSeek API
                 )
-                return self._create_for_stream(response)
+                return self._create_for_stream(response, **kwargs)
         else:
             return self.client.chat.completions.create(
                 model=model,
@@ -62,7 +66,7 @@ class DeepseekProvider(Provider):
                 **kwargs  # Pass any additional arguments to the DeepSeek API
             )
 
-    def _create_for_stream(self, response):
+    def _create_for_stream(self, response, **kwargs):
         """
         Create a generator for streaming DeepSeek responses.
         :param response: response
@@ -87,6 +91,10 @@ class DeepseekProvider(Provider):
 
                     if box.choices[0].delta.reasoning_content:
                         has_think_counter += 1
+                        if kwargs.get("response_format", None) and \
+                                kwargs.get("response_format").get('type', None) == "json_object":
+                            # 如果是json输出，请不需要输出思考
+                            continue
                         if has_think_counter == 1:
                             chat_completion_chunk.choices[0].delta.content = '<think>'
                             yield chat_completion_chunk
@@ -96,8 +104,13 @@ class DeepseekProvider(Provider):
                         # 已经结束
                         if has_think_counter >= 1 and not has_set_end:
                             has_set_end = True
-                            think_end_chunk = deepcopy(chat_completion_chunk)
-                            think_end_chunk.choices[0].delta.content = '<\\think>\n'
-                            yield think_end_chunk
+                            if kwargs.get("response_format", None) and \
+                                    kwargs.get("response_format").get('type', None) == "json_object":
+                                # 如果是json输出，请不需要输出思考标记
+                                pass
+                            else:
+                                think_end_chunk = deepcopy(chat_completion_chunk)
+                                think_end_chunk.choices[0].delta.content = '<\\think>\n'
+                                yield think_end_chunk
 
                         yield chat_completion_chunk
