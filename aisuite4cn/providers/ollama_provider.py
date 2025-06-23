@@ -17,7 +17,8 @@ class OllamaProvider(Provider):
         self.config['api_key'] = "ollama"
 
         self.base_url = self.config.pop("base_url", os.getenv("OLLAMA_BASE_URL"))
-        # Pass the entire config to the DeepSeek client constructor
+        self.config['api_key'] = self.config.get('api_key', "ollama")
+        # Pass the entire config to the Ollama client constructor
         self.client = openai.OpenAI(
             base_url=self.base_url,
             **self.config)
@@ -27,5 +28,5 @@ class OllamaProvider(Provider):
         return self.client.chat.completions.create(
             model=model,
             messages=messages,
-            **kwargs  # Pass any additional arguments to the Moonshot API
+            **kwargs  # Pass any additional arguments to the Ollama API
         )
