@@ -1,6 +1,6 @@
 import openai
 import os
-from aisuite4cn.provider import Provider, LLMError
+from aisuite4cn.provider import Provider
 
 
 class QwenProvider(Provider):
