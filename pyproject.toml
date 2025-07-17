@@ -10,22 +10,25 @@ dependencies = [
     "pydantic (>=2.10.3,<3.0.0)",
     "httpx (~=0.27.0)",
     "openai (>=1.82.1); extra == 'openai'",
+    "volcengine-python-sdk[ark] (>=4.0.6); extra == 'ark'",
+    "qianfan (>=0.4.12.3); extra == 'qianfan'",
+    "zhipuai (>=2.1.5.20250717); extra == 'zhipuai'",
     "python-dotenv (>=1.1.0,<2.0.0)",
     "python-box (>=7.3.2,<8.0.0)"
 ]
 
 [project.optional-dependencies]
 moonshot = ["openai"]
-ark = ["openai"]
+ark = ["volcengine-python-sdk[ark] "]
 qwen = ["openai"]
-qianfan = ["qianfan>=0.4.12.2"]
+qianfan = ["qianfan"]
 hunyuan = ["openai"]
-zhipuai = ["zhipuai>=2.1.5.20241204"]
+zhipuai = ["zhipuai"]
 deepseek = ["openai"]
 spark = ["openai"]
 ollama = ["openai"]
 
-all = ["openai", "qianfan>=0.4.12.2", "zhipuai>=2.1.5.20241204"]
+all = ["openai", "qianfan", "zhipuai", "ark"]
 
 [tool.poetry.group.test]
 optional = true
