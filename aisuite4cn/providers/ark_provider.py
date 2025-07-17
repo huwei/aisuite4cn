@@ -38,9 +38,13 @@ class ArkProvider(Provider):
         # Maybe we should catch them and raise a custom LLMError.
 
         if not model.startswith("ep-"):
-            if not self.model_map[model]:
-                raise ArgumentError("config['model_map'] does not have a corresponding model name.")
-            real_model = self.model_map[model]
+            if self.model_map:
+                if self.model_map[model]:
+                    real_model = self.model_map[model]
+                else:
+                    real_model = model
+            else:
+                real_model = model
         else:
             real_model = model
         return self.client.chat.completions.create(
