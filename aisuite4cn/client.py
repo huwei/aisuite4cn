@@ -2,7 +2,7 @@ from .provider import ProviderFactory
 
 
 class Client:
-    def __init__(self, provider_configs: dict = {}):
+    def __init__(self, provider_configs=None):
         """
         Initialize the client with provider configurations.
         Use the ProviderFactory to create provider instances.
@@ -21,6 +21,8 @@ class Client:
                     }
                 }
         """
+        if provider_configs is None:
+            provider_configs = {}
         self.providers = {}
         self.provider_configs = provider_configs
         self._chat = None
