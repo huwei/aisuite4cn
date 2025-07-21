@@ -1,10 +1,10 @@
 [project]
 name = "aisuite4cn"
-version = "0.1.18"
+version = "0.1.19"
 description = "Uniform access layer for LLMs of China"
 authors = [{name="胡伟", email="3314672@qq.com"}]
 readme = "README.md"
-requires-python = ">=3.9,<3.12"
+requires-python = ">=3.9, <4"
 
 dependencies = [
     "pydantic (>=2.10.3,<3.0.0)",
