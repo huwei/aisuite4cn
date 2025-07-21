@@ -19,7 +19,7 @@ dependencies = [
 
 [project.optional-dependencies]
 moonshot = ["openai"]
-ark = ["volcengine-python-sdk[ark] "]
+ark = ["volcengine-python-sdk[ark]"]
 qwen = ["openai"]
 qianfan = ["qianfan"]
 hunyuan = ["openai"]
