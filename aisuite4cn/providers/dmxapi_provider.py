@@ -17,8 +17,7 @@ class DmxapiProvider(Provider):
         """
 
         self.config = dict(config)
-
-        self.base_url = self.config.pop("base_url", 'https://www.dmxapi.com/v1/')
+        self.base_url = self.config.pop("base_url", os.getenv("DMXAPI_BASE_URL", 'https://www.dmxapi.cn/v1/'))
         self.config['api_key'] = self.config.get('api_key', os.getenv("DMXAPI_API_KEY", None))
         if not self.config['api_key']:
             raise ValueError(
