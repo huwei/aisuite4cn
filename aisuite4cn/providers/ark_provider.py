@@ -1,6 +1,5 @@
 import os
 
-import openai
 from volcenginesdkarkruntime import Ark
 
 from aisuite4cn.provider import Provider

@@ -19,6 +19,9 @@ publish.sh
 samples/
 samples/**
 
+# examples
+examples/temp/
+
 # python
 dist/
 *.pyc
