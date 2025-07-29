@@ -14,7 +14,8 @@ dependencies = [
     "qianfan (>=0.4.12.3); extra == 'qianfan'",
     "zhipuai (>=2.1.5.20250717); extra == 'zhipuai'",
     "python-dotenv (>=1.1.0,<2.0.0)",
-    "python-box (>=7.3.2,<8.0.0)"
+    "python-box (>=7.3.2,<8.0.0)",
+    "llama-index (>=0.12.52,<0.13.0); extra == 'llama-index'"
 ]
 
 [project.optional-dependencies]
