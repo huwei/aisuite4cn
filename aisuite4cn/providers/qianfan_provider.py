@@ -1,14 +1,12 @@
+import os
 import time
 from typing import Optional
 
 import openai
-import os
-
 from pydantic import BaseModel
-
-from aisuite4cn.provider import Provider, LLMError
-
 from qianfan.resources.console.iam import IAM
+
+from aisuite4cn.provider import Provider
 
 
 class BearerToken(BaseModel):
@@ -63,6 +61,12 @@ class QianfanProvider(Provider):
                 base_url="https://qianfan.baidubce.com/v2",
                 **self.config)
 
+            # Pass the entire config to the Qianfan client constructor
+            self.async_client = openai.AsyncOpenAI(
+                api_key=self.get_bearer_token(),
+                base_url="https://qianfan.baidubce.com/v2",
+                **self.config)
+
     def get_bearer_token(self):
         if self.bearerToken is None:
             self.bearerToken = BearerToken()
@@ -86,6 +90,15 @@ class QianfanProvider(Provider):
         # Any exception raised by Qianfan will be returned to the caller.
         # Maybe we should catch them and raise a custom LLMError.
         return self.client.chat.completions.create(
+            model=model,
+            messages=messages,
+            **kwargs  # Pass any additional arguments to the Moonshot API
+        )
+
+    async def async_chat_completions_create(self, model, messages, **kwargs):
+        if not self.config['api_key']:
+            self.client.api_key = self.get_bearer_token()
+        return await self.async_client.chat.completions.create(
             model=model,
             messages=messages,
             **kwargs  # Pass any additional arguments to the Moonshot API

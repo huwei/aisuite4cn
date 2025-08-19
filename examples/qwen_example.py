@@ -1,3 +1,5 @@
+import asyncio
+
 from dotenv import load_dotenv
 
 import aisuite4cn as ai
@@ -30,15 +32,33 @@ for chunk in response:
     if chunk.choices[0].delta.content:
         print(chunk.choices[0].delta.content, end='')
 
+async def async_create():
+
+    response = await client.chat.completions.async_create(
+        model=f"{provider}:{model_id}",
+        messages=messages,
+        stream=True,
+        response_format={
+            "type": "json_object"
+        }
+    )
+
+    async for chunk in response:
+
+        if chunk.choices[0].delta.content:
+            print(chunk.choices[0].delta.content, end='')
+
+asyncio.run(async_create())
+
 # stream = False
-#
-# response = client.chat.completions.create(
-#     model=f"{provider}:{model_id}",
-#     messages=messages,
-#     stream=False,
-#     response_format={
-#         "type": "json_object"
-#     }
-# )
-#
-# print(response.choices[0].message.content)
+
+response = client.chat.completions.create(
+    model=f"{provider}:{model_id}",
+    messages=messages,
+    stream=False,
+    response_format={
+        "type": "json_object"
+    }
+)
+
+print(response.choices[0].message.content)

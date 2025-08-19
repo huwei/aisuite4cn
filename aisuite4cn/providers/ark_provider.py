@@ -1,6 +1,6 @@
 import os
 
-from volcenginesdkarkruntime import Ark
+from volcenginesdkarkruntime import Ark, AsyncArk
 
 from aisuite4cn.provider import Provider
 
@@ -23,7 +23,22 @@ class ArkProvider(Provider):
                 "Ark API key is missing. Please provide it in the config or set the ARK_API_KEY environment variable."
             )
         # Pass the entire config to the Ark client constructor
-        self.client = Ark(**self.config)
+        self._client = None
+        self._async_client = None
+
+    @property
+    def client(self):
+        """Getter for the OpenAI client."""
+        if not self._client:
+            self._client = Ark(**self.config)
+        return self._client
+
+    @property
+    def async_client(self):
+        """Getter for the OpenAI client."""
+        if not self._async_client:
+            self._async_client = AsyncArk(**self.config)
+        return self._async_client
 
     def chat_completions_create(self, model, messages, **kwargs):
 
@@ -31,6 +46,15 @@ class ArkProvider(Provider):
         # Maybe we should catch them and raise a custom LLMError.
 
         return self.client.chat.completions.create(
+            model=model,
+            messages=messages,
+            **kwargs  # Pass any additional arguments to the Ark API
+        )
+
+
+    async def async_chat_completions_create(self, model, messages, **kwargs):
+
+        return await self.async_client.chat.completions.create(
             model=model,
             messages=messages,
             **kwargs  # Pass any additional arguments to the Ark API
