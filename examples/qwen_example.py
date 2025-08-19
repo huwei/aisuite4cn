@@ -9,6 +9,8 @@ load_dotenv()
 
 client = ai.Client()
 
+async_client = ai.AsyncClient()
+
 provider = "qwen"
 model_id = "qwen-max"
 
@@ -34,7 +36,7 @@ for chunk in response:
 
 async def async_create():
 
-    response = await client.chat.completions.async_create(
+    response = await async_client.chat.completions.create(
         model=f"{provider}:{model_id}",
         messages=messages,
         stream=True,

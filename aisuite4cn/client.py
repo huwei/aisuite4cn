@@ -1,3 +1,5 @@
+from abc import ABC
+
 from .provider import ProviderFactory
 
 
@@ -68,6 +70,16 @@ class Client:
         return self._chat
 
 
+class AsyncClient(Client):
+
+    @property
+    def chat(self):
+        """Return the chat API interface."""
+        if not self._chat:
+            self._chat = AsyncChat(self)
+        return self._chat
+
+
 class Chat:
     def __init__(self, client: "Client"):
         self.client = client
@@ -79,33 +91,21 @@ class Chat:
         return self._completions
 
 
-class Completions:
-    def __init__(self, client: "Client"):
+class AsyncChat:
+    def __init__(self, client: "AsyncClient"):
         self.client = client
+        self._completions = AsyncCompletions(self.client)
 
-    def create(self, model: str, messages: list, **kwargs):
-        """
-        Create chat completion based on the model, messages, and any extra arguments.
-        """
-        # Check that correct format is used
-        provider_key, model_name = self._get_provider_key_and_model_name(model)
+    @property
+    def completions(self):
+        """Return the completions interface."""
+        return self._completions
 
-        provider = self._get_provider(provider_key)
 
-        # Delegate the chat completion to the correct provider's implementation
-        return provider.chat_completions_create(model_name, messages, **kwargs)
+class BaseCompletions(ABC):
 
-    async def async_create(self, model: str, messages: list, **kwargs):
-        """
-        Create chat completion based on the model, messages, and any extra arguments.
-        """
-        # Check that correct format is used
-        provider_key, model_name = self._get_provider_key_and_model_name(model)
-
-        provider = self._get_provider(provider_key)
-
-        # Delegate the chat completion to the correct provider's implementation
-        return await provider.async_chat_completions_create(model_name, messages, **kwargs)
+    def __init__(self, client):
+        self.client = client
 
     @staticmethod
     def _get_provider_key_and_model_name(model):
@@ -142,3 +142,39 @@ class Completions:
         if not provider:
             raise ValueError(f"Could not load provider for '{provider_key}'.")
         return provider
+
+
+class AsyncCompletions(BaseCompletions):
+
+    def __init__(self, client: "AsyncClient"):
+        super().__init__(client)
+
+    async def create(self, model: str, messages: list, **kwargs):
+        """
+        Create chat completion based on the model, messages, and any extra arguments.
+        """
+        # Check that correct format is used
+        provider_key, model_name = self._get_provider_key_and_model_name(model)
+
+        provider = self._get_provider(provider_key)
+
+        # Delegate the chat completion to the correct provider's implementation
+        return await provider.async_chat_completions_create(model_name, messages, **kwargs)
+
+
+class Completions(BaseCompletions):
+
+    def __init__(self, client: "Client"):
+        super().__init__(client)
+
+    def create(self, model: str, messages: list, **kwargs):
+        """
+        Create chat completion based on the model, messages, and any extra arguments.
+        """
+        # Check that correct format is used
+        provider_key, model_name = self._get_provider_key_and_model_name(model)
+
+        provider = self._get_provider(provider_key)
+
+        # Delegate the chat completion to the correct provider's implementation
+        return provider.chat_completions_create(model_name, messages, **kwargs)
