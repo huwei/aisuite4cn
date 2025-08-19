@@ -1,11 +1,9 @@
 import os
 
-import openai
-
-from aisuite4cn.provider import Provider
+from aisuite4cn.provider import BaseProvider
 
 
-class SiliconflowProvider(Provider):
+class SiliconflowProvider(BaseProvider):
     """
     Siliconflow Provider
     """
@@ -17,21 +15,13 @@ class SiliconflowProvider(Provider):
         """
         # Ensure API key is provided either in config or via environment variable
 
-        self.config = dict(config)
-        self.config.setdefault("api_key", os.getenv("SILICONFLOW_API_KEY"))
-        if not self.config['api_key']:
+        current_config = dict(config)
+        current_config.setdefault("api_key", os.getenv("SILICONFLOW_API_KEY"))
+        if not current_config['api_key']:
             raise ValueError(
                 "Siliconflow API key is missing. Please provide it in the config or set the SILICONFLOW_API_KEY environment variable."
             )
-        # Pass the entire config to the DeepSeek client constructor
-        self.client = openai.OpenAI(
-            base_url="https://api.siliconflow.cn/v1",
-            **self.config)
 
-    def chat_completions_create(self, model, messages, **kwargs):
-
-        return self.client.chat.completions.create(
-            model=model,
-            messages=messages,
-            **kwargs  # Pass any additional arguments to the Siliconflow API
-        )
+        super().__init__(
+            base_url='https://api.siliconflow.cn/v1',
+            **current_config)

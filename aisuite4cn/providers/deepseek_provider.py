@@ -6,10 +6,10 @@ import openai
 from box import Box
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
-from aisuite4cn.provider import Provider
+from aisuite4cn.provider import BaseProvider
 
 
-class DeepseekProvider(Provider):
+class DeepseekProvider(BaseProvider):
     """
     DeepSeek Provider
     """
@@ -20,17 +20,15 @@ class DeepseekProvider(Provider):
         Pass the entire configuration dictionary to the DeepSeek client constructor.
         """
         # Ensure API key is provided either in config or via environment variable
-
-        self.config = dict(config)
-        self.config.setdefault("api_key", os.getenv("DEEPSEEK_API_KEY"))
-        if not self.config['api_key']:
+        current_config = dict(config)
+        current_config.setdefault("api_key", os.getenv("DEEPSEEK_API_KEY"))
+        if not current_config['api_key']:
             raise ValueError(
                 "DeepSeek API key is missing. Please provide it in the config or set the DEEPSEEK_API_KEY environment variable."
             )
-        # Pass the entire config to the DeepSeek client constructor
-        self.client = openai.OpenAI(
-            base_url="https://api.deepseek.com/v1",
-            **self.config)
+
+        super().__init__('https://api.deepseek.com/v1',
+                         **current_config)
 
     def chat_completions_create(self, model, messages, **kwargs):
         # Any exception raised by DeepSeek will be returned to the caller.
@@ -50,7 +48,7 @@ class DeepseekProvider(Provider):
                     else:
                         response.choices[0].message.content = (f'<think>' +
                                                                response.choices[0].message.reasoning_content +
-                                                               '<\\think>\n' + response.choices[0].message.content)
+                                                               '</think>\n' + response.choices[0].message.content)
                 return response
             else:
                 response = self.client.with_streaming_response.chat.completions.create(
@@ -110,7 +108,7 @@ class DeepseekProvider(Provider):
                                 pass
                             else:
                                 think_end_chunk = deepcopy(chat_completion_chunk)
-                                think_end_chunk.choices[0].delta.content = '<\\think>\n'
+                                think_end_chunk.choices[0].delta.content = '</think>\n'
                                 yield think_end_chunk
 
                         yield chat_completion_chunk

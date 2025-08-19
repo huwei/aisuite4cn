@@ -50,3 +50,36 @@ class ProviderFactory:
         """List all supported provider names based on files present in the providers directory."""
         provider_files = Path(cls.PROVIDERS_DIR).glob("*_provider.py")
         return {file.stem.replace("_provider", "") for file in provider_files}
+
+
+import openai
+
+
+class BaseProvider(Provider):
+    """Base class for all openai compatible providers."""
+
+    def __init__(self, base_url, **config):
+        self.base_url = base_url
+        self.config = dict(config)
+        self._client = None
+
+    @property
+    def client(self):
+        """Getter for the OpenAI client."""
+        if not self._client:
+            self._client = openai.OpenAI(base_url=self.base_url, **self.config)
+        return self._client
+
+    @client.setter
+    def client(self, value):
+        """Setter for the OpenAI client."""
+        self._client = value
+
+    def chat_completions_create(self, model, messages, **kwargs):
+        """Create a chat completion using the OpenAI API."""
+
+        return self.client.chat.completions.create(
+            model=model,
+            messages=messages,
+            **kwargs
+        )
