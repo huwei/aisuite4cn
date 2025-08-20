@@ -30,7 +30,7 @@ class ZhipuaiProvider(Provider):
 
     @property
     def client(self):
-        if self._client:
+        if not self._client:
             self._client = zhipuai.ZhipuAI(**self.config)
         return self._client
 
