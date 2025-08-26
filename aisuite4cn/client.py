@@ -1,3 +1,5 @@
+from abc import ABC
+
 from .provider import ProviderFactory
 
 
@@ -68,6 +70,16 @@ class Client:
         return self._chat
 
 
+class AsyncClient(Client):
+
+    @property
+    def chat(self):
+        """Return the chat API interface."""
+        if not self._chat:
+            self._chat = AsyncChat(self)
+        return self._chat
+
+
 class Chat:
     def __init__(self, client: "Client"):
         self.client = client
@@ -79,27 +91,40 @@ class Chat:
         return self._completions
 
 
-class Completions:
-    def __init__(self, client: "Client"):
+class AsyncChat:
+    def __init__(self, client: "AsyncClient"):
+        self.client = client
+        self._completions = AsyncCompletions(self.client)
+
+    @property
+    def completions(self):
+        """Return the completions interface."""
+        return self._completions
+
+
+class BaseCompletions(ABC):
+
+    def __init__(self, client):
         self.client = client
 
-    def create(self, model: str, messages: list, **kwargs):
+    @staticmethod
+    def _get_provider_key_and_model_name(model):
         """
-        Create chat completion based on the model, messages, and any extra arguments.
+        Extract the provider key and model name from the model string.
         """
-        # Check that correct format is used
         if ":" not in model:
             raise ValueError(
                 f"Invalid model format. Expected 'provider:model', got '{model}'"
             )
-
         # Find the first ':' to split provider_key and model_name
         separator_index = model.find(':')
         if separator_index == -1:
             raise ValueError("Model identifier must contain a ':' to specify the provider key and model name.")
-        provider_key = model[:separator_index]
         model_name = model[separator_index + 1:]
+        provider_key = model[:separator_index]
+        return provider_key, model_name
 
+    def _get_provider(self, provider_key):
         # Validate if the provider is supported
         supported_providers = ProviderFactory.get_supported_providers()
         if provider_key not in supported_providers:
@@ -107,17 +132,49 @@ class Completions:
                 f"Invalid provider key '{provider_key}'. Supported providers: {supported_providers}. "
                 "Make sure the model string is formatted correctly as 'provider:model'."
             )
-
         # Initialize provider if not already initialized
         if provider_key not in self.client.providers:
             config = self.client.provider_configs.get(provider_key, {})
             self.client.providers[provider_key] = ProviderFactory.create_provider(
                 provider_key, config
             )
-
         provider = self.client.providers.get(provider_key)
         if not provider:
             raise ValueError(f"Could not load provider for '{provider_key}'.")
+        return provider
+
+
+class AsyncCompletions(BaseCompletions):
+
+    def __init__(self, client: "AsyncClient"):
+        super().__init__(client)
+
+    async def create(self, model: str, messages: list, **kwargs):
+        """
+        Create chat completion based on the model, messages, and any extra arguments.
+        """
+        # Check that correct format is used
+        provider_key, model_name = self._get_provider_key_and_model_name(model)
+
+        provider = self._get_provider(provider_key)
+
+        # Delegate the chat completion to the correct provider's implementation
+        return await provider.async_chat_completions_create(model_name, messages, **kwargs)
+
+
+class Completions(BaseCompletions):
+
+    def __init__(self, client: "Client"):
+        super().__init__(client)
+
+    def create(self, model: str, messages: list, **kwargs):
+        """
+        Create chat completion based on the model, messages, and any extra arguments.
+        """
+        # Check that correct format is used
+        provider_key, model_name = self._get_provider_key_and_model_name(model)
+
+        provider = self._get_provider(provider_key)
 
         # Delegate the chat completion to the correct provider's implementation
         return provider.chat_completions_create(model_name, messages, **kwargs)

@@ -1,14 +1,12 @@
+import os
 import time
 from typing import Optional
 
 import openai
-import os
-
 from pydantic import BaseModel
-
-from aisuite4cn.provider import Provider, LLMError
-
 from qianfan.resources.console.iam import IAM
+
+from aisuite4cn.provider import Provider
 
 
 class BearerToken(BaseModel):
@@ -39,21 +37,35 @@ class QianfanProvider(Provider):
 
         self.config = dict(config)
 
-        self.access_key = self.config.pop("access_key", os.getenv("QIANFAN_ACCESS_KEY"))
-        self.secret_key = self.config.pop("secret_key", os.getenv("QIANFAN_SECRET_KEY"))
-        if not self.access_key:
-            raise ValueError(
-                "Qainfan access key is missing. Please provide it in the config or set the QIANFAN_ACCESS_KEY environment variable."
-            )
-        if not self.secret_key:
-            raise ValueError(
-                "Qianfan secret key is missing. Please provide it in the config or set the QIANFAN_SECRET_KEY environment variable."
-            )
-        # Pass the entire config to the Qianfan client constructor
-        self.client = openai.OpenAI(
-            api_key=self.get_bearer_token(),
-            base_url="https://qianfan.baidubce.com/v2",
-            **self.config)
+        self.config.setdefault("api_key", os.getenv("QIANFAN_API_KEY"))
+        if self.config['api_key']:
+            self.config.pop("access_key")
+            self.config.pop("secret_key")
+            self.client = openai.OpenAI(
+                base_url="https://qianfan.baidubce.com/v2",
+                **self.config)
+        else:
+            self.access_key = self.config.pop("access_key", os.getenv("QIANFAN_ACCESS_KEY"))
+            self.secret_key = self.config.pop("secret_key", os.getenv("QIANFAN_SECRET_KEY"))
+            if not self.access_key:
+                raise ValueError(
+                    "Qainfan access key is missing. Please provide it in the config or set the QIANFAN_ACCESS_KEY environment variable."
+                )
+            if not self.secret_key:
+                raise ValueError(
+                    "Qianfan secret key is missing. Please provide it in the config or set the QIANFAN_SECRET_KEY environment variable."
+                )
+            # Pass the entire config to the Qianfan client constructor
+            self.client = openai.OpenAI(
+                api_key=self.get_bearer_token(),
+                base_url="https://qianfan.baidubce.com/v2",
+                **self.config)
+
+            # Pass the entire config to the Qianfan client constructor
+            self.async_client = openai.AsyncOpenAI(
+                api_key=self.get_bearer_token(),
+                base_url="https://qianfan.baidubce.com/v2",
+                **self.config)
 
     def get_bearer_token(self):
         if self.bearerToken is None:
@@ -73,10 +85,20 @@ class QianfanProvider(Provider):
         return self.bearerToken.token
 
     def chat_completions_create(self, model, messages, **kwargs):
-        self.client.api_key = self.get_bearer_token()
+        if not self.config['api_key']:
+            self.client.api_key = self.get_bearer_token()
         # Any exception raised by Qianfan will be returned to the caller.
         # Maybe we should catch them and raise a custom LLMError.
         return self.client.chat.completions.create(
+            model=model,
+            messages=messages,
+            **kwargs  # Pass any additional arguments to the Moonshot API
+        )
+
+    async def async_chat_completions_create(self, model, messages, **kwargs):
+        if not self.config['api_key']:
+            self.client.api_key = self.get_bearer_token()
+        return await self.async_client.chat.completions.create(
             model=model,
             messages=messages,
             **kwargs  # Pass any additional arguments to the Moonshot API
