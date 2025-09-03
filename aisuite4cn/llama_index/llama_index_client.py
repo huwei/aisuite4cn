@@ -61,6 +61,14 @@ from llama_index.core.llms.utils import parse_partial_json
 from llama_index.core.program.utils import FlexibleModel
 from llama_index.core.prompts import PromptTemplate
 from llama_index.core.types import BaseOutputParser, PydanticProgramMode
+from openai.types.chat.chat_completion_chunk import (
+    ChatCompletionChunk,
+    ChoiceDelta,
+    ChoiceDeltaToolCall,
+)
+
+from aisuite4cn import AsyncClient
+from aisuite4cn import Client as SyncClient
 from .utils import (
     create_retry_decorator,
     from_openai_completion_logprobs,
@@ -71,14 +79,6 @@ from .utils import (
     update_tool_calls,
     is_json_schema_supported,
 )
-from openai.types.chat.chat_completion_chunk import (
-    ChatCompletionChunk,
-    ChoiceDelta,
-    ChoiceDeltaToolCall,
-)
-
-from aisuite4cn import AsyncClient
-from aisuite4cn import Client as SyncClient
 
 dispatcher = instrument.get_dispatcher(__name__)
 
@@ -178,9 +178,9 @@ class LlamaIndexClient(FunctionCallingLLM):
         description="Whether to return logprobs per token.",
         default=False,
     )
-    top_logprobs: Optional[int] = Field(
+    top_logprobs: int = Field(
         description="The number of top token log probs to return.",
-        default=None,
+        default=0,
         ge=0,
         le=20,
     )
@@ -471,8 +471,8 @@ class LlamaIndexClient(FunctionCallingLLM):
 
             is_function = False
             for response in client.chat.completions.create(
-                messages=message_dicts,
-                **self._get_model_kwargs(stream=True, **kwargs),
+                    messages=message_dicts,
+                    **self._get_model_kwargs(stream=True, **kwargs),
             ):
                 response = cast(ChatCompletionChunk, response)
                 if len(response.choices) > 0:
@@ -948,7 +948,7 @@ class LlamaIndexClient(FunctionCallingLLM):
             del llm_kwargs["tool_choice"]
         return llm_kwargs
 
-    def _should_use_structure_outputs(self):
+    def _should_use_structure_outputs(self, llm_kwargs: Dict[str, Any]):
         return (
                 self.pydantic_program_mode == PydanticProgramMode.DEFAULT
                 and is_json_schema_supported(llm_kwargs.get('model'))
@@ -965,7 +965,7 @@ class LlamaIndexClient(FunctionCallingLLM):
         """Structured predict."""
         llm_kwargs = llm_kwargs or {}
 
-        if self._should_use_structure_outputs():
+        if self._should_use_structure_outputs(llm_kwargs):
             messages = self._extend_messages(prompt.format_messages(**prompt_args))
             llm_kwargs = self._prepare_schema(llm_kwargs, output_cls)
             response = self.chat(messages, **llm_kwargs)
@@ -991,7 +991,7 @@ class LlamaIndexClient(FunctionCallingLLM):
         """Structured predict."""
         llm_kwargs = llm_kwargs or {}
 
-        if self._should_use_structure_outputs():
+        if self._should_use_structure_outputs(llm_kwargs):
             messages = self._extend_messages(prompt.format_messages(**prompt_args))
             llm_kwargs = self._prepare_schema(llm_kwargs, output_cls)
             response = await self.achat(messages, **llm_kwargs)
@@ -1015,7 +1015,7 @@ class LlamaIndexClient(FunctionCallingLLM):
     ) -> Generator[
         Union[Model, List[Model], "FlexibleModel", List["FlexibleModel"]], None, None
     ]:
-        if self._should_use_structure_outputs():
+        if self._should_use_structure_outputs(llm_kwargs):
             from llama_index.core.program.streaming_utils import (
                 process_streaming_content_incremental,
             )
@@ -1045,10 +1045,10 @@ class LlamaIndexClient(FunctionCallingLLM):
     ) -> AsyncGenerator[
         Union[Model, List[Model], "FlexibleModel", List["FlexibleModel"]], None
     ]:
-        if self._should_use_structure_outputs():
+        if self._should_use_structure_outputs(llm_kwargs):
 
             async def gen(
-                    llm_kwargs=llm_kwargs,
+                    llm_kwargs=llm_kwargs
             ) -> AsyncGenerator[
                 Union[Model, List[Model], FlexibleModel, List[FlexibleModel]], None
             ]:
