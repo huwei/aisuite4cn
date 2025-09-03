@@ -6,6 +6,9 @@
 # poetry
 poetry.lock
 
+# uv
+uv.lock
+
 # pypi
 publish.sh
 

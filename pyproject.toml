@@ -1,6 +1,6 @@
 [project]
 name = "aisuite4cn"
-version = "0.1.22"
+version = "1.0.1"
 description = "Uniform access layer for LLMs of China"
 authors = [{name="胡伟", email="3314672@qq.com"}]
 readme = "README.md"
@@ -15,7 +15,7 @@ dependencies = [
     "qianfan (>=0.4.12.3); extra == 'qianfan'",
     "volcengine-python-sdk[ark] (>=4.0.6); extra == 'ark'",
     "zhipuai (>=2.1.5.20250717); extra == 'zhipuai'",
-    "llama-index (>=0.12.52,<0.13.0); extra == 'llama-index'"
+    "llama-index (>=0.13.4,<0.14.0); extra == 'llama-index'",
 ]
 
 [project.optional-dependencies]
@@ -28,8 +28,9 @@ zhipuai = ["zhipuai"]
 deepseek = ["openai"]
 spark = ["openai"]
 ollama = ["openai"]
+llama-index = ["llama-index"]
 
-all = ["openai", "qianfan", "zhipuai", "ark"]
+all = ["openai", "qianfan", "zhipuai", "ark", "llama-index"]
 
 [tool.poetry.group.test]
 optional = true
@@ -38,7 +39,14 @@ optional = true
 pytest = "^8.2.2"
 pytest-cov = "^6.0.0"
 python-dotenv = "^1.0.1"
+llama-index = "^0.13.4"
+openai = "^1.82.1"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.source]]
+name = "pypi-tsinghua"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+priority = "primary"
