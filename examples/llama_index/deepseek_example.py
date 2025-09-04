@@ -10,7 +10,7 @@ model_id = "deepseek-reasoner"
 # model_id = "deepseek-chat"
 
 
-client = LlamaIndexClient()
+client = LlamaIndexClient(model=f"{provider}:{model_id}")
 
 
 # resp = client.complete(model=f"{provider}:{model_id}", prompt="甲基丙烯酰化明胶的合成方案")
@@ -18,7 +18,7 @@ client = LlamaIndexClient()
 # print(resp.text)
 
 
-resp = client.stream_complete(model=f"{provider}:{model_id}", prompt="甲基丙烯酰化明胶的合成方案")
+resp = client.stream_complete(prompt="甲基丙烯酰化明胶的合成方案")
 for chunk in resp:
     if chunk.raw.choices[0].delta.reasoning_content:
         print(chunk.raw.choices[0].delta.reasoning_content, end='')

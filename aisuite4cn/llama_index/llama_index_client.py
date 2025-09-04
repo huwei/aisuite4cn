@@ -178,9 +178,9 @@ class LlamaIndexClient(FunctionCallingLLM):
         description="Whether to return logprobs per token.",
         default=False,
     )
-    top_logprobs: int = Field(
+    top_logprobs: Optional[int] = Field(
         description="The number of top token log probs to return.",
-        default=0,
+        default=None,
         ge=0,
         le=20,
     )
@@ -391,11 +391,13 @@ class LlamaIndexClient(FunctionCallingLLM):
             "model": self.model,
             "temperature": self.temperature,
             "max_tokens": self.max_tokens,
-            "logprobs": self.logprobs,
-            "top_logprobs": self.top_logprobs,
             "modalities": self.modalities,
             "audio": self.audio_config,
         }
+        if self.logprobs:
+            base_kwargs["logprobs"] = self.logprobs
+            if self.top_logprobs>0:
+                base_kwargs["top_logprobs"] = self.top_logprobs
 
         # 合并所有参数，后面的值覆盖前面的值
         all_kwargs = {
@@ -1125,7 +1127,7 @@ class LlamaIndexClient(FunctionCallingLLM):
         """Stream structured predict."""
         llm_kwargs = llm_kwargs or {}
         llm_kwargs = self._get_model_kwargs(**llm_kwargs)
-        
+
         return await super().astream_structured_predict(
             output_cls, prompt, llm_kwargs=llm_kwargs, **prompt_args
         )
