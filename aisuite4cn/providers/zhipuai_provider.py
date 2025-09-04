@@ -1,7 +1,5 @@
 import os
 
-import openai
-
 from aisuite4cn.provider import BaseProvider
 
 
