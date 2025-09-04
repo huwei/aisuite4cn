@@ -388,6 +388,7 @@ class LlamaIndexClient(FunctionCallingLLM):
 
     def _get_model_kwargs(self, **kwargs: Any) -> Dict[str, Any]:
         base_kwargs = {
+            "model": self.model,
             "temperature": self.temperature,
             "max_tokens": self.max_tokens,
             "logprobs": self.logprobs,
@@ -415,7 +416,8 @@ class LlamaIndexClient(FunctionCallingLLM):
     @llm_retry_decorator
     def _chat(self, messages: Sequence[ChatMessage], **kwargs: Any) -> ChatResponse:
         client = self._get_client()
-        model = kwargs.get('model')
+        all_kwargs = self._get_model_kwargs(**kwargs)
+        model = all_kwargs.get('model')
         message_dicts = to_openai_message_dicts(
             messages,
             model=model,
@@ -425,14 +427,14 @@ class LlamaIndexClient(FunctionCallingLLM):
             response = client.chat.completions.create(
                 messages=message_dicts,
                 stream=False,
-                **self._get_model_kwargs(**kwargs),
+                **all_kwargs,
             )
         else:
             with client:
                 response = client.chat.completions.create(
                     messages=message_dicts,
                     stream=False,
-                    **self._get_model_kwargs(**kwargs),
+                    **all_kwargs,
                 )
 
         openai_message = response.choices[0].message
@@ -460,9 +462,10 @@ class LlamaIndexClient(FunctionCallingLLM):
 
         client = self._get_client()
 
+        all_kwargs = self._get_model_kwargs(stream=True, **kwargs)
         message_dicts = to_openai_message_dicts(
             messages,
-            model=kwargs.get('model'),
+            model=all_kwargs.get('model'),
         )
 
         def gen() -> ChatResponseGen:
@@ -472,7 +475,7 @@ class LlamaIndexClient(FunctionCallingLLM):
             is_function = False
             for response in client.chat.completions.create(
                     messages=message_dicts,
-                    **self._get_model_kwargs(stream=True, **kwargs),
+                    **all_kwargs,
             ):
                 response = cast(ChatCompletionChunk, response)
                 if len(response.choices) > 0:
@@ -552,12 +555,13 @@ class LlamaIndexClient(FunctionCallingLLM):
 
         def gen() -> CompletionResponseGen:
             text = ""
-            for response in client.completions.create(
-                    prompt=prompt,
-                    **all_kwargs,
-            ):
-                if len(response.choices) > 0:
-                    delta = response.choices[0].text
+            response = client.completions.create(
+                prompt=prompt,
+                **all_kwargs,
+            )
+            for chunk in response:
+                if len(chunk.choices) > 0:
+                    delta = chunk.choices[0].text
                     if delta is None:
                         delta = ""
                 else:
@@ -566,8 +570,8 @@ class LlamaIndexClient(FunctionCallingLLM):
                 yield CompletionResponse(
                     delta=delta,
                     text=text,
-                    raw=response,
-                    additional_kwargs=self._get_response_token_counts(response),
+                    raw=chunk,
+                    additional_kwargs=self._get_response_token_counts(chunk),
                 )
 
         return gen()
@@ -622,11 +626,14 @@ class LlamaIndexClient(FunctionCallingLLM):
             **kwargs: Any,
     ) -> ChatResponse:
         achat_fn: Callable[..., Awaitable[ChatResponse]]
-        if self._use_chat_completions(kwargs):
+
+        all_kwargs = self._get_model_kwargs(**kwargs)
+        if self._use_chat_completions(all_kwargs):
             achat_fn = self._achat
         else:
             achat_fn = acompletion_to_chat_decorator(self._acomplete)
-        return await achat_fn(messages, **kwargs)
+
+        return await achat_fn(messages, **all_kwargs)
 
     @llm_chat_callback()
     async def astream_chat(
@@ -635,13 +642,15 @@ class LlamaIndexClient(FunctionCallingLLM):
             **kwargs: Any,
     ) -> ChatResponseAsyncGen:
         astream_chat_fn: Callable[..., Awaitable[ChatResponseAsyncGen]]
-        if self._use_chat_completions(kwargs):
+
+        all_kwargs = self._get_model_kwargs(**kwargs)
+        if self._use_chat_completions(all_kwargs):
             astream_chat_fn = self._astream_chat
         else:
             astream_chat_fn = astream_completion_to_chat_decorator(
                 self._astream_complete
             )
-        return await astream_chat_fn(messages, **kwargs)
+        return await astream_chat_fn(messages, **all_kwargs)
 
     @llm_completion_callback()
     async def acomplete(
@@ -651,45 +660,48 @@ class LlamaIndexClient(FunctionCallingLLM):
             raise ValueError(
                 "Audio is not supported for completion. Use chat/achat instead."
             )
-
-        if self._use_chat_completions(kwargs):
+        all_kwargs = self._get_model_kwargs(**kwargs)
+        if self._use_chat_completions(all_kwargs):
             acomplete_fn = achat_to_completion_decorator(self._achat)
         else:
             acomplete_fn = self._acomplete
-        return await acomplete_fn(prompt, **kwargs)
+        return await acomplete_fn(prompt, **all_kwargs)
 
     @llm_completion_callback()
     async def astream_complete(
             self, prompt: str, formatted: bool = False, **kwargs: Any
     ) -> CompletionResponseAsyncGen:
-        if self._use_chat_completions(kwargs):
+
+        all_kwargs = self._get_model_kwargs(stream=True, **kwargs)
+        if self._use_chat_completions(all_kwargs):
             astream_complete_fn = astream_chat_to_completion_decorator(
                 self._astream_chat
             )
         else:
             astream_complete_fn = self._astream_complete
-        return await astream_complete_fn(prompt, **kwargs)
+        return await astream_complete_fn(prompt, **all_kwargs)
 
     @llm_retry_decorator
     async def _achat(
             self, messages: Sequence[ChatMessage], **kwargs: Any
     ) -> ChatResponse:
         aclient = self._get_aclient()
+        all_kwargs = self._get_model_kwargs(**kwargs)
         message_dicts = to_openai_message_dicts(
             messages,
-            model=kwargs.get('model'),
+            model=all_kwargs.get('model'),
         )
 
         if self.reuse_client:
             response = await aclient.chat.completions.create(
-                messages=message_dicts, stream=False, **self._get_model_kwargs(**kwargs)
+                messages=message_dicts, stream=False, **all_kwargs
             )
         else:
             async with aclient:
                 response = await aclient.chat.completions.create(
                     messages=message_dicts,
                     stream=False,
-                    **self._get_model_kwargs(**kwargs),
+                    **all_kwargs,
                 )
 
         openai_message = response.choices[0].message
@@ -716,9 +728,11 @@ class LlamaIndexClient(FunctionCallingLLM):
             raise ValueError("Audio is not supported for chat streaming")
 
         aclient = self._get_aclient()
+
+        all_kwargs = self._get_model_kwargs(stream=True, **kwargs)
         message_dicts = to_openai_message_dicts(
             messages,
-            model=kwargs.get('model'),
+            model=all_kwargs.get('model'),
         )
 
         async def gen() -> ChatResponseAsyncGen:
@@ -729,7 +743,7 @@ class LlamaIndexClient(FunctionCallingLLM):
             first_chat_chunk = True
             async for response in await aclient.chat.completions.create(
                     messages=message_dicts,
-                    **self._get_model_kwargs(stream=True, **kwargs),
+                    **all_kwargs,
             ):
                 response = cast(ChatCompletionChunk, response)
                 if len(response.choices) > 0:
@@ -964,6 +978,7 @@ class LlamaIndexClient(FunctionCallingLLM):
     ) -> Model:
         """Structured predict."""
         llm_kwargs = llm_kwargs or {}
+        llm_kwargs = self._get_model_kwargs(**llm_kwargs)
 
         if self._should_use_structure_outputs(llm_kwargs):
             messages = self._extend_messages(prompt.format_messages(**prompt_args))
@@ -990,6 +1005,7 @@ class LlamaIndexClient(FunctionCallingLLM):
     ) -> Model:
         """Structured predict."""
         llm_kwargs = llm_kwargs or {}
+        llm_kwargs = self._get_model_kwargs(**llm_kwargs)
 
         if self._should_use_structure_outputs(llm_kwargs):
             messages = self._extend_messages(prompt.format_messages(**prompt_args))
@@ -1015,6 +1031,9 @@ class LlamaIndexClient(FunctionCallingLLM):
     ) -> Generator[
         Union[Model, List[Model], "FlexibleModel", List["FlexibleModel"]], None, None
     ]:
+
+        llm_kwargs = llm_kwargs or {}
+        llm_kwargs = self._get_model_kwargs(**llm_kwargs)
         if self._should_use_structure_outputs(llm_kwargs):
             from llama_index.core.program.streaming_utils import (
                 process_streaming_content_incremental,
@@ -1045,6 +1064,9 @@ class LlamaIndexClient(FunctionCallingLLM):
     ) -> AsyncGenerator[
         Union[Model, List[Model], "FlexibleModel", List["FlexibleModel"]], None
     ]:
+
+        llm_kwargs = llm_kwargs or {}
+        llm_kwargs = self._get_model_kwargs(**llm_kwargs)
         if self._should_use_structure_outputs(llm_kwargs):
 
             async def gen(
@@ -1086,6 +1108,7 @@ class LlamaIndexClient(FunctionCallingLLM):
     ) -> Generator[Union[Model, FlexibleModel], None, None]:
         """Stream structured predict."""
         llm_kwargs = llm_kwargs or {}
+        llm_kwargs = self._get_model_kwargs(**llm_kwargs)
 
         return super().stream_structured_predict(
             output_cls, prompt, llm_kwargs=llm_kwargs, **prompt_args
@@ -1101,6 +1124,8 @@ class LlamaIndexClient(FunctionCallingLLM):
     ) -> AsyncGenerator[Union[Model, FlexibleModel], None]:
         """Stream structured predict."""
         llm_kwargs = llm_kwargs or {}
+        llm_kwargs = self._get_model_kwargs(**llm_kwargs)
+        
         return await super().astream_structured_predict(
             output_cls, prompt, llm_kwargs=llm_kwargs, **prompt_args
         )

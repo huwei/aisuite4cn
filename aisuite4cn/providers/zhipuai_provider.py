@@ -1,12 +1,11 @@
 import os
 
 import openai
-import zhipuai
 
-from aisuite4cn.provider import Provider
+from aisuite4cn.provider import BaseProvider
 
 
-class ZhipuaiProvider(Provider):
+class ZhipuaiProvider(BaseProvider):
     """
     Zhipu Provider
     """
@@ -18,28 +17,15 @@ class ZhipuaiProvider(Provider):
         """
         # Ensure API key is provided either in config or via environment variable
 
-        self.config = dict(config)
-        self.config.setdefault("api_key", os.getenv("ZHIPUAI_API_KEY"))
-        if not self.config["api_key"]:
+        current_config = dict(config)
+        current_config.setdefault("api_key", os.getenv("ZHIPUAI_API_KEY"))
+        if not current_config["api_key"]:
             raise ValueError(
                 "Zhipu API key is missing. Please provide it in the config or set the ZHIPUAI_API_KEY environment variable."
             )
-        self._client = None
-        self._async_client = None
-        self.base_url = f"https://open.bigmodel.cn/api/paas/v4"
 
-    @property
-    def client(self):
-        if not self._client:
-            self._client = zhipuai.ZhipuAI(**self.config)
-        return self._client
-
-    @property
-    def async_client(self):
-        """Getter for the OpenAI client."""
-        if not self._async_client:
-            self._async_client = openai.AsyncOpenAI(base_url=self.base_url, **self.config)
-        return self._async_client
+        super().__init__('https://open.bigmodel.cn/api/paas/v4',
+                         **current_config)
 
     def chat_completions_create(self, model, messages, **kwargs):
         # Any exception raised by Zhipu will be returned to the caller.
@@ -48,18 +34,14 @@ class ZhipuaiProvider(Provider):
         # Note: Zhipu does not support the frequency_penalty and presence_penalty parameters.
         cpkwargs.pop('frequency_penalty', None)
         cpkwargs.pop('presence_penalty', None)
-        return self.client.chat.completions.create(
-            model=model,
-            messages=messages,
-            **cpkwargs  # Pass any additional arguments to the Zhipu API
-        )
+        return super().chat_completions_create(model, messages, **cpkwargs)
 
     async def async_chat_completions_create(self, model, messages, **kwargs):
         cpkwargs = dict(kwargs)
         # Note: Zhipu does not support the frequency_penalty and presence_penalty parameters.
         cpkwargs.pop('frequency_penalty', None)
         cpkwargs.pop('presence_penalty', None)
-        return await self.async_client.chat.completions.create(
+        return await super().async_chat_completions_create(
             model=model,
             messages=messages,
             **cpkwargs  # Pass any additional arguments to the Zhipu API

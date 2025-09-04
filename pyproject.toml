@@ -14,7 +14,6 @@ dependencies = [
     "openai (>=1.82.1); extra == 'openai'",
     "qianfan (>=0.4.12.3); extra == 'qianfan'",
     "volcengine-python-sdk[ark] (>=4.0.6); extra == 'ark'",
-    "zhipuai (>=2.1.5.20250717); extra == 'zhipuai'",
     "llama-index (>=0.13.4,<0.14.0); extra == 'llama-index'",
 ]
 
@@ -24,13 +23,13 @@ ark = ["volcengine-python-sdk[ark]"]
 qwen = ["openai"]
 qianfan = ["qianfan"]
 hunyuan = ["openai"]
-zhipuai = ["zhipuai"]
+zhipuai = ["openai"]
 deepseek = ["openai"]
 spark = ["openai"]
 ollama = ["openai"]
 llama-index = ["llama-index"]
 
-all = ["openai", "qianfan", "zhipuai", "ark", "llama-index"]
+all = ["openai", "qianfan", "ark", "llama-index"]
 
 [tool.poetry.group.test]
 optional = true
