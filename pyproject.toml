@@ -1,6 +1,6 @@
 [project]
 name = "aisuite4cn"
-version = "1.0.3"
+version = "1.0.4"
 description = "Uniform access layer for LLMs of China"
 authors = [{name="胡伟", email="3314672@qq.com"}]
 readme = "README.md"
@@ -14,7 +14,7 @@ dependencies = [
     "openai (>=1.82.1); extra == 'openai'",
     "qianfan (>=0.4.12.3); extra == 'qianfan'",
     "volcengine-python-sdk[ark] (>=4.0.6); extra == 'ark'",
-    "llama-index (>=0.13.4,<0.14.0); extra == 'llama-index'",
+    "llama-index-core (>=0.13.4,<0.14.0); extra == 'llama-index'",
 ]
 
 [project.optional-dependencies]
@@ -30,6 +30,14 @@ ollama = ["openai"]
 llama-index = ["llama-index"]
 
 all = ["openai", "qianfan", "ark", "llama-index"]
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+python-dotenv = "^1.0.1"
+llama-index-core = "^0.13.4"
+openai = "^1.82.1"
 
 [tool.poetry.group.test]
 optional = true
