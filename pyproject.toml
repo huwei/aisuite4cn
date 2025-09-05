@@ -2,7 +2,7 @@
 name = "aisuite4cn"
 version = "1.0.3"
 description = "Uniform access layer for LLMs of China"
-authors = [{name="胡伟", email="3314672@qq.com"}]
+authors = [{ name = "胡伟", email = "3314672@qq.com" }]
 readme = "README.md"
 requires-python = ">=3.9, <4"
 
@@ -35,14 +35,13 @@ all = ["openai", "qianfan", "ark", "llama-index"]
 [tool.poetry.group.dev]
 optional = true
 
-
-[tool.poetry.group.test]
-optional = true
-
 [tool.poetry.group.dev.dependencies]
 python-dotenv = "^1.0.1"
 llama-index-core = ">=0.13.4,<0.14.0"
 openai = "^1.82.1"
+
+[tool.poetry.group.test]
+optional = true
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"
