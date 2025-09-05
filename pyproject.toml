@@ -11,6 +11,7 @@ dependencies = [
     "python-box (>=7.3.2,<8.0.0)",
     "python-dotenv (>=1.1.0,<2.0.0)",
     "httpx (~=0.27.0)",
+    "agentscope>=0.1.6",
     "openai (>=1.82.1); extra == 'openai'",
     "qianfan (>=0.4.12.3); extra == 'qianfan'",
     "volcengine-python-sdk[ark] (>=4.0.6); extra == 'ark'",
@@ -31,8 +32,17 @@ llama-index = ["llama-index"]
 
 all = ["openai", "qianfan", "ark", "llama-index"]
 
+[tool.poetry.group.dev]
+optional = true
+
+
 [tool.poetry.group.test]
 optional = true
+
+[tool.poetry.group.dev.dependencies]
+python-dotenv = "^1.0.1"
+llama-index = ">=0.13.4,<0.14.0"
+openai = "^1.82.1"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"
