@@ -80,17 +80,28 @@ class BaseProvider(Provider):
     def client(self, value):
         """Setter for the OpenAI client."""
         self._client = value
-
     @property
     def async_client(self):
-        """Getter for the OpenAI client."""
+        """Getter for the asynchronous OpenAI client.
+
+        Lazily initializes the AsyncOpenAI client if not already created.
+        """
         if not self._async_client:
-            self._async_client = openai.AsyncOpenAI(base_url=self.base_url, **self.config)
+            self._async_client = openai.AsyncOpenAI(
+                base_url=self.base_url,
+                **self.config
+            )
         return self._async_client
 
     @async_client.setter
     def async_client(self, value):
-        """Setter for the OpenAI client."""
+        """Setter for the asynchronous OpenAI client.
+
+        Allows replacing the default client with a custom one.
+
+        Args:
+            value: An instance of openai.AsyncOpenAI or compatible client
+        """
         self._async_client = value
 
     def chat_completions_create(self, model, messages, **kwargs):
