@@ -333,7 +333,7 @@ class LlamaIndexClient(FunctionCallingLLM):
         return LLMMetadata(
             num_output=self.max_tokens or -1,
             is_chat_model=True,
-            is_function_calling_model=False,
+            is_function_calling_model=True,
             model_name=self.model if self.model else "unknown",
             system_role=MessageRole.USER
         )

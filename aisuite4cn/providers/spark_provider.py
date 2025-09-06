@@ -1,7 +1,7 @@
 import os
 from urllib.parse import parse_qs
 
-from aisuite4cn.provider import BaseProvider
+from aisuite4cn.base_provider import BaseProvider
 
 
 class SparkProvider(BaseProvider):

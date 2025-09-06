@@ -103,3 +103,22 @@ class QianfanProvider(Provider):
             messages=messages,
             **kwargs  # Pass any additional arguments to the Moonshot API
         )
+
+    async def async_chat_completions_parse(self, model, messages, **kwargs):
+        if not self.config['api_key']:
+            self.client.api_key = self.get_bearer_token()
+        return await self.async_client.chat.completions.parse(
+            model=model,
+            messages=messages,
+            **kwargs  # Pass any additional arguments to the Moonshot API
+        )
+
+
+    def async_chat_completions_stream(self, model, messages, **kwargs):
+        if not self.config['api_key']:
+            self.client.api_key = self.get_bearer_token()
+        return self.async_client.chat.completions.stream(
+            model=model,
+            messages=messages,
+            **kwargs  # Pass any additional arguments to the Moonshot API
+        )

@@ -1,4 +1,5 @@
 import os
+from xml.dom import NotSupportedErr
 
 from volcenginesdkarkruntime import Ark, AsyncArk
 
@@ -59,3 +60,10 @@ class ArkProvider(Provider):
             messages=messages,
             **kwargs  # Pass any additional arguments to the Ark API
         )
+
+    async def async_chat_completions_parse(self, model, messages, **kwargs):
+        raise NotImplementedError
+
+
+    def async_chat_completions_stream(self, model, messages, **kwargs):
+        raise NotImplementedError
