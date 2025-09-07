@@ -116,7 +116,7 @@ def _to_openai_audio_data(source: URLSource | Base64Source) -> dict:
     raise TypeError(f"Unsupported audio source: {source['type']}.")
 
 
-class OpenAICompatibleChatFormatter(TruncatedFormatterBase):
+class OpenAICompatibleFormatter(TruncatedFormatterBase):
     """The class used to format message objects into the OpenAI API required
     format."""
 
@@ -296,13 +296,30 @@ class OpenAICompatibleMultiAgentFormatter(TruncatedFormatterBase):
         super().__init__(token_counter=token_counter, max_tokens=max_tokens)
         self.conversation_history_prompt = conversation_history_prompt
 
+
+    async def _format_system_message(
+        self,
+        msg: Msg,
+    ) -> dict[str, Any]:
+        """Format system message for the LLM API.
+
+        .. note:: This is the default implementation. For certain LLM APIs
+        with specific requirements, you may need to implement a custom
+        formatting function to accommodate those particular needs.
+        """
+        text_blocks: list[TextBlock] = msg.get_content_blocks("text")
+        return {
+            "role": "system",
+            "content": text_blocks[0].get('text') if text_blocks else None,
+        }
+
     async def _format_tool_sequence(
             self,
             msgs: list[Msg],
     ) -> list[dict[str, Any]]:
         """Given a sequence of tool call/result messages, format them into
         the required format for the OpenAI API."""
-        return await OpenAICompatibleChatFormatter().format(msgs)
+        return await OpenAICompatibleFormatter().format(msgs)
 
     async def _format_agent_message(
             self,
@@ -405,6 +422,10 @@ class OpenAICompatibleMultiAgentFormatter(TruncatedFormatterBase):
             content_list.extend(images)
         if audios:
             content_list.extend(audios)
+
+
+        if content_list and len(content_list) == 1 and 'text' == content_list[0].get("type"):
+            content_list = content_list[0].get("text")
 
         user_message = {
             "role": "user",

@@ -1,6 +1,6 @@
 from ._agentscope_client import AgentScopeClient
-from ._openai_compatible_formatter import OpenAICompatibleChatFormatter
+from ._openai_compatible_formatter import OpenAICompatibleFormatter
 __all__ = [
     "AgentScopeClient",
-    "OpenAICompatibleChatFormatter",
+    "OpenAICompatibleFormatter",
 ]
