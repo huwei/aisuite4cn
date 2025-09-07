@@ -45,18 +45,17 @@ class SparkProvider(BaseProvider):
         # Any exception raised by Moonshot will be returned to the caller.
         # Maybe we should catch them and raise a custom LLMError.
         self.client.api_key = self._get_api_key_from_api_key_map(model)
-        return self.client.chat.completions.create(
-            model=model,
-            messages=messages,
-            **kwargs  # Pass any additional arguments to the Moonshot API
-        )
-
+        return super().async_chat_completions_create(model, messages, **kwargs)
 
     async def async_chat_completions_create(self, model, messages, **kwargs):
         """Create a chat completion using the AsyncOpenAI API."""
         self.client.api_key = self._get_api_key_from_api_key_map(model)
-        return await self.async_client.chat.completions.create(
-            model=model,
-            messages=messages,
-            **kwargs
-        )
+        return await super().async_chat_completions_create(model, messages, **kwargs)
+
+    async def async_chat_completions_parse(self, model, messages, **kwargs):
+        self.client.api_key = self._get_api_key_from_api_key_map(model)
+        return await super().async_chat_completions_parse(model, messages, **kwargs)
+
+    def async_chat_completions_stream(self, model, messages, **kwargs):
+        self.client.api_key = self._get_api_key_from_api_key_map(model)
+        return super().async_chat_completions_stream(model, messages, **kwargs)

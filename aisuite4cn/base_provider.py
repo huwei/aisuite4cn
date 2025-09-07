@@ -1,6 +1,41 @@
 import openai
 from aisuite4cn.provider import Provider
 
+OPENAI_PARAMS = [
+    "messages",
+    "model",
+    "audio",
+    "response_format",
+    "frequency_penalty",
+    "function_call",
+    "functions",
+    "logit_bias",
+    "logprobs",
+    "max_completion_tokens",
+    "max_tokens",
+    "metadata",
+    "modalities",
+    "n",
+    "parallel_tool_calls",
+    "prediction",
+    "presence_penalty",
+    "prompt_cache_key",
+    "reasoning_effort",
+    "safety_identifier",
+    "seed",
+    "service_tier",
+    "stop",
+    "store",
+    "stream_options",
+    "temperature",
+    "tool_choice",
+    "tools",
+    "top_logprobs",
+    "top_p",
+    "user",
+    "verbosity"
+]
+
 
 class BaseProvider(Provider):
     """Base class for all openai compatible providers."""
@@ -52,7 +87,7 @@ class BaseProvider(Provider):
         return self.client.chat.completions.create(
             model=model,
             messages=messages,
-            **kwargs
+            **self._compatible_with_openai_kwargs(kwargs)
         )
 
 
@@ -62,22 +97,33 @@ class BaseProvider(Provider):
         return await self.async_client.chat.completions.create(
             model=model,
             messages=messages,
-            **kwargs
+            **self._compatible_with_openai_kwargs(kwargs)
         )
 
 
     async def async_chat_completions_parse(self, model, messages, **kwargs):
-
         return await self.async_client.chat.completions.parse(
             model=model,
             messages=messages,
-            **kwargs
+            **self._compatible_with_openai_kwargs(kwargs)
         )
 
     def async_chat_completions_stream(self, model, messages, **kwargs):
-
         return self.async_client.chat.completions.stream(
             model=model,
             messages=messages,
-            **kwargs
+            **self._compatible_with_openai_kwargs(kwargs)
         )
+
+    @staticmethod
+    def _compatible_with_openai_kwargs(kwargs:dict=None) ->  dict:
+        # add logic to convert kwargs to openai compatible kwargs
+        new_kwargs = dict(kwargs) if kwargs else {}
+        new_extra_body = dict(kwargs.get("extra_body", {}))
+        for k, v in kwargs.items():
+            if k not in OPENAI_PARAMS:
+                new_extra_body[k] = new_kwargs.pop(k)
+        if new_extra_body:
+            new_kwargs["extra_body"] = new_extra_body
+        return new_kwargs
+
