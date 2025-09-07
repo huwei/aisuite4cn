@@ -40,10 +40,9 @@ class AgentScopeClient(ChatModelBase):
         self,
         model_name: str,
         stream: bool = True,
-        reasoning_effort: Optional[Literal["low", "medium", "high"]] = None,
         client_args: dict = None,
         generate_kwargs: Optional[dict[str, JSONSerializableObject]] = None,
-        provider_configs: Optional[Dict[str, Any]] = None
+        provider_configs: Optional[dict[str, Any]] = None
     ) -> None:
         """Initialize the openai client.
 
@@ -52,17 +51,11 @@ class AgentScopeClient(ChatModelBase):
                 The name of the model to use in OpenAI API.
             stream (`bool`, default `True`):
                 Whether to use streaming output or not.
-            reasoning_effort (`Literal["low", "medium", "high"] | None`, \
-            optional):
-                Reasoning effort, supported for o3, o4, etc. Please refer to
-                `OpenAI documentation
-                <https://platform.openai.com/docs/guides/reasoning?api-mode=chat>`_
-                for more details.
-            organization (`str`, default `None`):
-                The organization ID for OpenAI API. If not specified, it will
-                be read from the environment variable `OPENAI_ORGANIZATION`.
             client_args (`dict`, default `None`):
                 The extra keyword arguments to initialize the OpenAI client.
+            provider_configs (`dict[str, Any] | None`, \
+             optional):
+               The provider configs.
             generate_kwargs (`dict[str, JSONSerializableObject] | None`, \
              optional):
                The extra keyword arguments used in OpenAI API generation,
@@ -71,20 +64,14 @@ class AgentScopeClient(ChatModelBase):
 
         super().__init__(model_name, stream)
 
-        import openai
-
-        self.client = openai.AsyncClient(
-            api_key=api_key,
-            organization=organization,
-            **(client_args or {}),
-        )
         self.provider_configs = provider_configs or {}
-        self.reasoning_effort = reasoning_effort
         self.generate_kwargs = generate_kwargs or {}
+        self.client_args = client_args or {}
         self._aclient = None
 
 
-    def _get_aclient(self) -> AsyncClient:
+    @property
+    def client(self) -> AsyncClient:
         if self._aclient is None:
             self._aclient = AsyncClient(self.provider_configs)
         return self._aclient
@@ -161,8 +148,6 @@ class AgentScopeClient(ChatModelBase):
             **self.generate_kwargs,
             **kwargs,
         }
-        if self.reasoning_effort and "reasoning_effort" not in kwargs:
-            kwargs["reasoning_effort"] = self.reasoning_effort
 
         if tools:
             kwargs["tools"] = self._format_tools_json_schemas(tools)
