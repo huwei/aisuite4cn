@@ -30,7 +30,7 @@ ollama = ["openai"]
 llama-index = ["llama-index"]
 agentscope = ["agentscope"]
 
-all = ["openai", "qianfan", "ark", "llama-index", "agentscope"]
+all = ["openai", "qianfan", "llama-index", "agentscope"]
 
 [tool.poetry.group.dev]
 optional = true
