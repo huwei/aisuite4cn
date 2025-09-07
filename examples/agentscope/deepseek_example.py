@@ -1,14 +1,11 @@
 import asyncio
 
 from agentscope.agent import ReActAgent, UserAgent
-from agentscope.formatter import (
-    OpenAIChatFormatter,
-)
 from agentscope.memory import InMemoryMemory
 from agentscope.tool import Toolkit
 from dotenv import load_dotenv
 
-from aisuite4cn.agentscope import AgentScopeClient
+from aisuite4cn.agentscope import AgentScopeClient, OpenAICompatibleChatFormatter
 
 # 加载 .env 文件中的环境变量
 load_dotenv()
@@ -23,7 +20,7 @@ friday = ReActAgent(
     model=AgentScopeClient(
         model_name=f"{provider}:{model_id}"
     ),
-    formatter=OpenAIChatFormatter(),  # The formatter for user-agent conversation
+    formatter=OpenAICompatibleChatFormatter(),  # The formatter for user-agent conversation
     memory=InMemoryMemory(),
     toolkit=Toolkit(),
 )
