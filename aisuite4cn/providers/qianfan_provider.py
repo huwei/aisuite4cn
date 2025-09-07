@@ -6,7 +6,7 @@ import openai
 from pydantic import BaseModel
 from qianfan.resources.console.iam import IAM
 
-from aisuite4cn.provider import Provider
+from aisuite4cn import BaseProvider
 
 
 class BearerToken(BaseModel):
@@ -17,7 +17,7 @@ class BearerToken(BaseModel):
     expire_time: float = 0
 
 
-class QianfanProvider(Provider):
+class QianfanProvider(BaseProvider):
     """
     Baidu Qianfan Provider
 
@@ -38,13 +38,13 @@ class QianfanProvider(Provider):
         self.config = dict(config)
 
         self.config.setdefault("api_key", os.getenv("QIANFAN_API_KEY"))
+
         if self.config['api_key']:
+            self.use_api_key = True
             self.config.pop("access_key")
             self.config.pop("secret_key")
-            self.client = openai.OpenAI(
-                base_url="https://qianfan.baidubce.com/v2",
-                **self.config)
         else:
+            self.use_api_key = False
             self.access_key = self.config.pop("access_key", os.getenv("QIANFAN_ACCESS_KEY"))
             self.secret_key = self.config.pop("secret_key", os.getenv("QIANFAN_SECRET_KEY"))
             if not self.access_key:
@@ -55,17 +55,51 @@ class QianfanProvider(Provider):
                 raise ValueError(
                     "Qianfan secret key is missing. Please provide it in the config or set the QIANFAN_SECRET_KEY environment variable."
                 )
-            # Pass the entire config to the Qianfan client constructor
-            self.client = openai.OpenAI(
-                api_key=self.get_bearer_token(),
-                base_url="https://qianfan.baidubce.com/v2",
-                **self.config)
 
-            # Pass the entire config to the Qianfan client constructor
-            self.async_client = openai.AsyncOpenAI(
-                api_key=self.get_bearer_token(),
-                base_url="https://qianfan.baidubce.com/v2",
-                **self.config)
+        super().__init__(
+            base_url='https://qianfan.baidubce.com/v2',
+            **self.config)
+
+    @property
+    def client(self):
+        """Getter for the OpenAI client."""
+        if not self._client:
+            if self.use_api_key:
+                self._client = openai.OpenAI(base_url=self.base_url, **self.config)
+            else:
+                self._client = openai.OpenAI(
+                    api_key=self.get_bearer_token(),
+                    base_url=self.base_url,
+                    **self.config)
+            return self._client
+
+        if not self.use_api_key:
+            self._client.api_key = self.get_bearer_token()
+        return self._client
+
+    @property
+    def async_client(self):
+        """Getter for the asynchronous OpenAI client.
+
+        Lazily initializes the AsyncOpenAI client if not already created.
+        """
+        if not self._async_client:
+            if self.use_api_key:
+                self._async_client = openai.AsyncOpenAI(
+                    base_url=self.base_url,
+                    **self.config
+                )
+            else:
+                self._async_client = openai.AsyncOpenAI(
+                    api_key=self.get_bearer_token(),
+                    base_url=self.base_url,
+                    **self.config
+                )
+            return self._async_client
+
+        if not self.use_api_key:
+            self._async_client.api_key = self.get_bearer_token()
+        return self._async_client
 
     def get_bearer_token(self):
         if self.bearerToken is None:
@@ -83,23 +117,3 @@ class QianfanProvider(Provider):
         self.bearerToken.create_time = time.time()
         self.bearerToken.expire_time = self.bearerToken.create_time + expire_in_seconds - 120
         return self.bearerToken.token
-
-    def chat_completions_create(self, model, messages, **kwargs):
-        if not self.config['api_key']:
-            self.client.api_key = self.get_bearer_token()
-        # Any exception raised by Qianfan will be returned to the caller.
-        # Maybe we should catch them and raise a custom LLMError.
-        return self.client.chat.completions.create(
-            model=model,
-            messages=messages,
-            **kwargs  # Pass any additional arguments to the Moonshot API
-        )
-
-    async def async_chat_completions_create(self, model, messages, **kwargs):
-        if not self.config['api_key']:
-            self.client.api_key = self.get_bearer_token()
-        return await self.async_client.chat.completions.create(
-            model=model,
-            messages=messages,
-            **kwargs  # Pass any additional arguments to the Moonshot API
-        )

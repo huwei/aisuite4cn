@@ -1,6 +1,6 @@
 import os
 
-from aisuite4cn.provider import BaseProvider
+from aisuite4cn.base_provider import BaseProvider
 
 
 class DmxapiProvider(BaseProvider):
@@ -21,4 +21,4 @@ class DmxapiProvider(BaseProvider):
                 "Dmxapi API key is missing. Please provide it in the config or set the DMXAPI_API_KEY environment variable."
             )
         base_url = current_config.pop("base_url", os.getenv("DMXAPI_BASE_URL", 'https://www.dmxapi.cn/v1/'))
-        super().__init__(base_url=base_url, **current_config)
+        super().__init__(base_url, **current_config)

@@ -12,6 +12,13 @@ export QIANFAN_ACCESS_KEY="your-qianfan-access-key"
 export QIANFAN_SECRET_KEY="your-qianfan-secret-key"
 ```
 
+Or you can use the `api_key` instead. your environment as follows:
+
+```shell
+export QIANFAN_API_KEY="your-qianfan-api-key"
+```
+
+
 ## Create a Chat Completion
 
 Install the `qianfan` Python client:

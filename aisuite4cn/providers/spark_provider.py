@@ -1,7 +1,7 @@
 import os
 from urllib.parse import parse_qs
 
-from aisuite4cn.provider import BaseProvider
+from aisuite4cn.base_provider import BaseProvider
 
 
 class SparkProvider(BaseProvider):
@@ -41,22 +41,6 @@ class SparkProvider(BaseProvider):
             )
         return self.api_key_map[model]
 
-    def chat_completions_create(self, model, messages, **kwargs):
-        # Any exception raised by Moonshot will be returned to the caller.
-        # Maybe we should catch them and raise a custom LLMError.
+    def _prepare_chat_completions_call(self, model, messages, **kwargs):
         self.client.api_key = self._get_api_key_from_api_key_map(model)
-        return self.client.chat.completions.create(
-            model=model,
-            messages=messages,
-            **kwargs  # Pass any additional arguments to the Moonshot API
-        )
-
-
-    async def async_chat_completions_create(self, model, messages, **kwargs):
-        """Create a chat completion using the AsyncOpenAI API."""
-        self.client.api_key = self._get_api_key_from_api_key_map(model)
-        return await self.async_client.chat.completions.create(
-            model=model,
-            messages=messages,
-            **kwargs
-        )
+        return model, messages, kwargs
