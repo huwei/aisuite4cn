@@ -1,9 +1,6 @@
 import os
-import openai
-from volcenginesdkarkruntime import Ark, AsyncArk
 
 from aisuite4cn import BaseProvider
-from aisuite4cn.provider import Provider
 
 
 class ArkProvider(BaseProvider):

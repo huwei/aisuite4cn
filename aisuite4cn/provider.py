@@ -28,7 +28,7 @@ class Provider(ABC):
 
 
     @abstractmethod
-    async def async_chat_completions_stream(self, model, messages, **kwargs):
+    def async_chat_completions_stream(self, model, messages, **kwargs):
         pass
 
 

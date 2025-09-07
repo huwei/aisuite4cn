@@ -81,38 +81,45 @@ class BaseProvider(Provider):
         """
         self._async_client = value
 
+    def _prepare_chat_completions_call(self, model, messages, **kwargs):
+        return model, messages, kwargs
+
     def chat_completions_create(self, model, messages, **kwargs):
         """Create a chat completion using the OpenAI API."""
-
+        model, messages, new_kwargs = self._prepare_chat_completions_call(model, messages, **kwargs)
         return self.client.chat.completions.create(
             model=model,
             messages=messages,
-            **self._compatible_with_openai_kwargs(kwargs)
+            **self._compatible_with_openai_kwargs(new_kwargs)
         )
 
 
 
     async def async_chat_completions_create(self, model, messages, **kwargs):
         """Create a chat completion using the OpenAI API."""
+        model, messages, new_kwargs = self._prepare_chat_completions_call(model, messages, **kwargs)
         return await self.async_client.chat.completions.create(
             model=model,
             messages=messages,
-            **self._compatible_with_openai_kwargs(kwargs)
+            **self._compatible_with_openai_kwargs(new_kwargs)
         )
 
 
     async def async_chat_completions_parse(self, model, messages, **kwargs):
+
+        model, messages, new_kwargs = self._prepare_chat_completions_call(model, messages, **kwargs)
         return await self.async_client.chat.completions.parse(
             model=model,
             messages=messages,
-            **self._compatible_with_openai_kwargs(kwargs)
+            **self._compatible_with_openai_kwargs(new_kwargs)
         )
 
     def async_chat_completions_stream(self, model, messages, **kwargs):
+        model, messages, new_kwargs = self._prepare_chat_completions_call(model, messages, **kwargs)
         return self.async_client.chat.completions.stream(
             model=model,
             messages=messages,
-            **self._compatible_with_openai_kwargs(kwargs)
+            **self._compatible_with_openai_kwargs(new_kwargs)
         )
 
     @staticmethod
