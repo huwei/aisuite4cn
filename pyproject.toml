@@ -14,13 +14,12 @@ dependencies = [
     "agentscope (>=1.0.0, <2.0.0); extra == 'agentscope'",
     "openai (>=1.82.1); extra == 'openai'",
     "qianfan (>=0.4.12.3); extra == 'qianfan'",
-    "volcengine-python-sdk[ark] (>=4.0.6)",
     "llama-index-core (>=0.13.4,<0.14.0); extra == 'llama-index'",
 ]
 
 [project.optional-dependencies]
 moonshot = ["openai"]
-ark = ["volcengine-python-sdk[ark]", "openai"]
+ark = ["openai"]
 qwen = ["openai"]
 qianfan = ["qianfan", "openai"]
 hunyuan = ["openai"]

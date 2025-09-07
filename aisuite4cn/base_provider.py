@@ -26,6 +26,7 @@ OPENAI_PARAMS = [
     "service_tier",
     "stop",
     "store",
+    "stream",
     "stream_options",
     "temperature",
     "tool_choice",
