@@ -7,7 +7,6 @@ from pydantic import BaseModel
 from qianfan.resources.console.iam import IAM
 
 from aisuite4cn import BaseProvider
-from aisuite4cn.provider import Provider
 
 
 class BearerToken(BaseModel):
@@ -70,7 +69,7 @@ class QianfanProvider(BaseProvider):
             else:
                 self._client = openai.OpenAI(
                     api_key=self.get_bearer_token(),
-                    base_url="https://qianfan.baidubce.com/v2",
+                    base_url=self.base_url,
                     **self.config)
             return self._client
 
@@ -93,7 +92,7 @@ class QianfanProvider(BaseProvider):
             else:
                 self._async_client = openai.AsyncOpenAI(
                     api_key=self.get_bearer_token(),
-                    base_url="https://qianfan.baidubce.com/v2",
+                    base_url=self.base_url,
                     **self.config
                 )
             return self._async_client
