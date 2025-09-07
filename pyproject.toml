@@ -15,10 +15,12 @@ dependencies = [
     "openai (>=1.82.1); extra == 'openai'",
     "qianfan (>=0.4.12.3); extra == 'qianfan'",
     "llama-index-core (>=0.13.4,<0.14.0); extra == 'llama-index'",
+    "langchain (>=0.3.27,<0.4.0)",
 ]
 
 [project.optional-dependencies]
 moonshot = ["openai"]
+minimax = ["openai"]
 ark = ["openai"]
 qwen = ["openai"]
 qianfan = ["qianfan", "openai"]
