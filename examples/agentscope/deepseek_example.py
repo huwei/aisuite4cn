@@ -13,11 +13,15 @@ from aisuite4cn.agentscope import AgentScopeClient
 # 加载 .env 文件中的环境变量
 load_dotenv()
 
+
+provider = "deepseek"
+model_id = "deepseek-chat"
+
 friday = ReActAgent(
     name="Friday",
     sys_prompt="You're a helpful assistant named Friday",
     model=AgentScopeClient(
-        model_name="deepseek:deepseek-chat"
+        model_name=f"{provider}:{model_id}"
     ),
     formatter=OpenAIChatFormatter(),  # The formatter for user-agent conversation
     memory=InMemoryMemory(),

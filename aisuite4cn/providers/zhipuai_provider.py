@@ -28,6 +28,7 @@ class ZhipuaiProvider(BaseProvider):
     def _prepare_chat_completions_call(self, model, messages, **kwargs):
         new_kwargs = dict(kwargs)
         # Note: Zhipu does not support the frequency_penalty and presence_penalty parameters.
-        new_kwargs.pop('frequency_penalty')
-        new_kwargs.pop('presence_penalty')
+        new_kwargs.pop('frequency_penalty', None)
+        new_kwargs.pop('presence_penalty', None)
         return model, messages, new_kwargs
+
