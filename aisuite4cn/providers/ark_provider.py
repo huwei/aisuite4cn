@@ -1,5 +1,5 @@
 import os
-
+import openai
 from volcenginesdkarkruntime import Ark, AsyncArk
 
 from aisuite4cn.provider import Provider
@@ -22,9 +22,12 @@ class ArkProvider(Provider):
             raise ValueError(
                 "Ark API key is missing. Please provide it in the config or set the ARK_API_KEY environment variable."
             )
+
+        self.base_url=self.config.pop('base_url', "https://ark.cn-beijing.volces.com/api/v3")
         # Pass the entire config to the Ark client constructor
         self._client = None
         self._async_client = None
+        self._async_openai_client = None
 
     @property
     def client(self):
@@ -39,6 +42,21 @@ class ArkProvider(Provider):
         if not self._async_client:
             self._async_client = AsyncArk(**self.config)
         return self._async_client
+
+
+    @property
+    def async_openai_client(self):
+        """Getter for the asynchronous OpenAI client.
+
+        Lazily initializes the AsyncOpenAI client if not already created.
+        """
+        if not self._async_openai_client:
+            self._async_openai_client = openai.AsyncOpenAI(
+                base_url=self.base_url,
+                **self.config
+            )
+        return self._async_openai_client
+
 
     def chat_completions_create(self, model, messages, **kwargs):
 
@@ -61,8 +79,16 @@ class ArkProvider(Provider):
         )
 
     async def async_chat_completions_parse(self, model, messages, **kwargs):
-        raise NotImplementedError
+        return await self.async_openai_client.chat.completions.parse(
+            model=model,
+            messages=messages,
+            **kwargs  # Pass any additional arguments to the OpenAI API
+        )
 
 
     def async_chat_completions_stream(self, model, messages, **kwargs):
-        raise NotImplementedError
+        raise self.async_openai_client.chat.completions.stream(
+            model=model,
+            messages=messages,
+            **kwargs  # Pass any additional arguments to the OpenAI API
+        )
