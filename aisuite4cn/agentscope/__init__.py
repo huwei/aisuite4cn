@@ -1,6 +1,8 @@
 from ._agentscope_client import AgentScopeClient
-from ._openai_compatible_formatter import OpenAICompatibleFormatter
+from ._openai_compatible_formatter import OpenAICompatibleFormatter, OpenAICompatibleMultiAgentFormatter
+
 __all__ = [
     "AgentScopeClient",
     "OpenAICompatibleFormatter",
+    "OpenAICompatibleMultiAgentFormatter"
 ]
