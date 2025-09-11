@@ -1,6 +1,6 @@
 [project]
 name = "aisuite4cn"
-version = "1.0.5"
+version = "1.0.6"
 description = "Uniform access layer for LLMs of China"
 authors = [{ name = "胡伟", email = "3314672@qq.com" }]
 readme = "README.md"
@@ -10,7 +10,7 @@ dependencies = [
     "pydantic (>=2.10.3,<3.0.0)",
     "python-box (>=7.3.2,<8.0.0)",
     "python-dotenv (>=1.1.0,<2.0.0)",
-    "httpx (~=0.27.0)",
+    "httpx (>=0.27.0)",
     "agentscope (>=1.0.0, <2.0.0); extra == 'agentscope'",
     "openai (>=1.82.1); extra == 'openai'",
     "qianfan (>=0.4.12.3); extra == 'qianfan'",
@@ -58,8 +58,8 @@ build-backend = "poetry.core.masonry.api"
 
 [[tool.poetry.source]]
 name = "pypi-tsinghua"
-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+url = "https://mirrors.aliyun.com/pypi/simple"
 priority = "primary"
 
 [tool.uv]
-index-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+index-url = "https://mirrors.aliyun.com/pypi/simple"
