@@ -91,7 +91,7 @@ def _streaming_response_template() -> Dict[str, Any]:
 
 
 def _create_retry_decorator(
-        llm: Union[BaseOpenAI, OpenAIChat],
+        llm: Union[BaseOpenAI, LangchainClient],
         run_manager: Optional[
             Union[AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun]
         ] = None,
@@ -111,7 +111,7 @@ def _create_retry_decorator(
 
 
 def completion_with_retry(
-        llm: Union[BaseOpenAI, OpenAIChat],
+        llm: Union[BaseOpenAI, LangchainClient],
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
 ) -> Any:
@@ -129,7 +129,7 @@ def completion_with_retry(
 
 
 async def acompletion_with_retry(
-        llm: Union[BaseOpenAI, OpenAIChat],
+        llm: Union[BaseOpenAI, LangchainClient],
         run_manager: Optional[AsyncCallbackManagerForLLMRun] = None,
         **kwargs: Any,
 ) -> Any:

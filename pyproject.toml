@@ -35,6 +35,15 @@ agentscope = ["agentscope", "openai"]
 
 all = ["openai", "qianfan", "llama-index", "agentscope"]
 
+# 新增 dev 可选依赖组，用于替代原来的 [tool.poetry.group.dev.dependencies]
+dev = [
+    "python-dotenv>=1.0.1",
+    "llama-index-core>=0.13.4,<0.14.0",
+    "openai>=1.82.1",
+    "agentscope>=1.0.0",
+    "qianfan>=0.4.12.3"
+]
+
 [tool.poetry.group.dev]
 optional = true
 
