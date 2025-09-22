@@ -13,7 +13,7 @@ class Joke(BaseModel):
     punchline: str = Field(description="笑话的点睛之笔")
 
 # 2. 初始化模型和 Pydantic 解析器
-model = LangchainClient()
+model = LangchainClient(model="deepseek:deepseek-chat")
 parser = PydanticOutputParser(pydantic_object=Joke)
 
 # 3. 创建一个提示模板，并注入格式化指令
@@ -36,24 +36,20 @@ prompt = PromptTemplate(
 chain = prompt | model | parser
 
 # 5. 调用链
-try:
-    query = "给我讲一个关于程序员的笑话"
-    joke_object: Joke = chain.invoke(
-        input={"query": query},
-        model="deepseek-chat"
-    )
+query = "给我讲一个关于程序员的笑话"
+joke_object: Joke = chain.invoke(
+    input={"query": query},
+    model="deepseek:deepseek-chat"
+)
 
-    # 6. 验证返回值的类型
-    print(f"Returned object type: {type(joke_object)}")
-    # > Returned object type: <class '__main__.Joke'>
+# 6. 验证返回值的类型
+print(f"Returned object type: {type(joke_object)}")
+# > Returned object type: <class '__main__.Joke'>
 
-    # 7. 使用结构化数据
-    print("--- 笑话时间 ---")
-    print(f"铺垫: {joke_object.setup}")
-    print(f"笑点: {joke_object.punchline}")
-    # > --- 笑话时间 ---
-    # > 铺垫: 为什么程序员总是分不清万圣节和圣诞节？
-    # > 笑点: 因为 Oct 31 == Dec 25！ (八进制的31等于十进制的25)
-
-except Exception as e:
-    print(f"An error occurred: {e}")
+# 7. 使用结构化数据
+print("--- 笑话时间 ---")
+print(f"铺垫: {joke_object.setup}")
+print(f"笑点: {joke_object.punchline}")
+# > --- 笑话时间 ---
+# > 铺垫: 为什么程序员总是分不清万圣节和圣诞节？
+# > 笑点: 因为 Oct 31 == Dec 25！ (八进制的31等于十进制的25)

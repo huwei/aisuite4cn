@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import sys
 import warnings
 from typing import (
@@ -29,11 +28,9 @@ from langchain_core.callbacks import (
 from langchain_core.language_models.llms import BaseLLM, create_base_retry_decorator
 from langchain_core.outputs import Generation, GenerationChunk, LLMResult
 from langchain_core.utils import (
-    get_from_dict_or_env,
     get_pydantic_field_names,
     pre_init,
 )
-from langchain_core.utils.pydantic import get_fields
 from langchain_core.utils.utils import _build_model_kwargs
 from pydantic import ConfigDict, Field, model_validator
 
@@ -245,9 +242,9 @@ class BaseOpenAI(BaseLLM):
     http_client: Union[Any, None] = None
     """Optional httpx.Client."""
 
-    def __new__(cls, **data: Any) -> Union[OpenAIChat, BaseOpenAI]:  # type: ignore[misc]
+    def __new__(cls, **data: Any) -> Union[LangchainClient, BaseOpenAI]:  # type: ignore[misc]
         """Initialize the OpenAI object."""
-        model_name = data.get("model_name", "")
+        model_name = data.get("model", "")
         if (
                 model_name.startswith("gpt-3.5-turbo") or model_name.startswith("gpt-4")
         ) and "-instruct" not in model_name:
@@ -566,7 +563,7 @@ class BaseOpenAI(BaseLLM):
                     for choice in sub_choices
                 ]
             )
-        llm_output = {"token_usage": token_usage, "model_name": self.model_name}
+        llm_output = {"token_usage": token_usage, "model": self.model}
         if system_fingerprint:
             llm_output["system_fingerprint"] = system_fingerprint
         return LLMResult(generations=generations, llm_output=llm_output)
@@ -592,7 +589,7 @@ class BaseOpenAI(BaseLLM):
     @property
     def _identifying_params(self) -> Mapping[str, Any]:
         """Get the identifying parameters."""
-        return {**{"model_name": self.model_name}, **self._default_params}
+        return {**{"model": self.model}, **self._default_params}
 
     @property
     def _llm_type(self) -> str:
@@ -613,7 +610,7 @@ class BaseOpenAI(BaseLLM):
                 "Please install it with `pip install tiktoken`."
             )
 
-        model_name = self.tiktoken_model_name or self.model_name
+        model_name = self.tiktoken_model_name or self.model
         try:
             enc = tiktoken.encoding_for_model(model_name)
         except KeyError:
@@ -689,7 +686,7 @@ class BaseOpenAI(BaseLLM):
     @property
     def max_context_size(self) -> int:
         """Get max context size for this model."""
-        return self.modelname_to_contextsize(self.model_name)
+        return self.modelname_to_contextsize(self.model)
 
     def max_tokens_for_prompt(self, prompt: str) -> int:
         """Calculate the maximum number of tokens possible to generate for a prompt.
@@ -732,7 +729,7 @@ class OpenAI(BaseOpenAI):
 
     @property
     def _invocation_params(self) -> Dict[str, Any]:
-        return {**{"model": self.model_name}, **super()._invocation_params}
+        return {**{"model": self.model}, **super()._invocation_params}
 
 
 class LangchainClient(BaseLLM):
@@ -757,7 +754,6 @@ class LangchainClient(BaseLLM):
     """Series of messages for Chat input."""
     streaming: bool = False
 
-
     @pre_init
     def validate_environment(cls, values: Dict) -> Dict:
         try:
@@ -777,7 +773,6 @@ class LangchainClient(BaseLLM):
             )
         return values
 
-
     def _get_chat_params(
             self, prompts: List[str], stop: Optional[List[str]] = None
     ) -> Tuple:
@@ -786,7 +781,7 @@ class LangchainClient(BaseLLM):
                 f"OpenAIChat currently only supports single prompt, got {prompts}"
             )
         messages = self.prefix_messages + [{"role": "user", "content": prompts[0]}]
-        params: Dict[str, Any] = {**{"model": self.model_name}, **self._default_params}
+        params: Dict[str, Any] = {**{"model": self.model}, **self._default_params}
         if stop is not None:
             if "stop" in params:
                 raise ValueError("`stop` found in both the input and default params.")
@@ -862,7 +857,7 @@ class LangchainClient(BaseLLM):
             full_response = full_response.dict()
         llm_output = {
             "token_usage": full_response["usage"],
-            "model_name": self.model_name,
+            "model_name": self.model,
         }
         return LLMResult(
             generations=[
@@ -897,7 +892,7 @@ class LangchainClient(BaseLLM):
             full_response = full_response.dict()
         llm_output = {
             "token_usage": full_response["usage"],
-            "model_name": self.model_name,
+            "model": self.model,
         }
         return LLMResult(
             generations=[
@@ -909,7 +904,7 @@ class LangchainClient(BaseLLM):
     @property
     def _identifying_params(self) -> Mapping[str, Any]:
         """Get the identifying parameters."""
-        return {**{"model_name": self.model_name}, **self._default_params}
+        return {**{"model": self.model}, **self._default_params}
 
     @property
     def _llm_type(self) -> str:
@@ -930,7 +925,7 @@ class LangchainClient(BaseLLM):
                 "Please install it with `pip install tiktoken`."
             )
 
-        enc = tiktoken.encoding_for_model(self.model_name)
+        enc = tiktoken.encoding_for_model(self.model)
         return enc.encode(
             text,
             allowed_special=self.allowed_special,
