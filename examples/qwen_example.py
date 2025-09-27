@@ -12,6 +12,17 @@ client = ai.Client()
 async_client = ai.AsyncClient()
 
 provider = "qwen"
+model_id = "text-embedding-v4"
+
+
+response = client.embeddings.create(
+    model=f"{provider}:{model_id}",
+    input='你好'
+)
+print(response.data[0].embedding)
+
+
+
 model_id = "qwen-max"
 
 messages = [

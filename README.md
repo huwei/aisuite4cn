@@ -9,13 +9,16 @@
 `aisuite4cn` 使得开发者能够通过标准化的接口轻松使用多个大型语言模型（LLM）。使用类似于OpenAI的接口，`aisuite4cn` 使得与最受欢迎的LLM互动并比较结果变得简单。它是Python客户端库的轻量级包装器，允许创造者在不改变代码的情况下无缝切换并测试来自不同LLM提供商的响应。我们将在不久的将来扩展它以覆盖更多的用例。
 
 当前支持的提供商包括：
-Moonshot（月之暗面）、
-Doubao（火山引擎方舟大模型服务平台）、
-Qwen（阿里云千问大模型）、
-Hunyuan（腾讯混元大模型）、
-Ernie（百度文心一言）、
-ZhipuAI（BigModel智谱AI大模型开放平台）
-
+* Moonshot（月之暗面）
+* Doubao（火山引擎方舟大模型服务平台）
+* Qwen（阿里云千问大模型）
+* Hunyuan（腾讯混元大模型）
+* Ernie（百度文心一言）
+* ZhipuAI（BigModel智谱AI大模型开放平台）
+* Longcat（美团Longcat大模型）
+* Siliconflow（硅基流动大模型）
+* DMXAPI（中国多模态大模型API聚合平台）
+* Ollama（ [Get up and running with large language models.](https://github.com/ollama/ollama)   ）
 
 ## 安装
 
@@ -61,6 +64,9 @@ export QIANFAN_ACCESS_KEY = "your-qianfan-access-key" #百度千帆 access key�
 export QIANFAN_SECRET_KEY = "your-qianfan-secret-key" #百度千帆 secret key，支持文心一言
 export DEEPSEEK_API_KEY="your-deepseek-api-key" # deepseek开放平台api-key，支持deepseek
 export SPARK_API_KEY_MAP = "modlename1=your-modelname1-api-key&modlename2=your-modelname1-api-key"
+export DMXAPI_API_KEY="your-dmxapi-api-key" # dmxapi api-key，支持dmxapi
+export LONGCAT_API_KEY="your-longcat-api-key" # 美团 longcat api-key
+export SILICONFLOW_API_KEY="your-siliconflow-api-key" # 硅基流api-key，支持硅基流
 ```
 
 使用python客户端
@@ -77,7 +83,8 @@ models = [
     "hunyuan:hunyuan-standard",
     "qianfan:ernie-3.5-8k",
     "zhipuai:glm-4-flash",
-    "deepseek:deepseek-chat"
+    "deepseek:deepseek-chat",
+    "longcat:LongCat-Flash-Chat"
 ]
 
 messages = [
@@ -125,6 +132,6 @@ poetry install --extras "all" --with dev
 ```shell
 uv sync --group dev
 uv sync --group test
-uv sync --extra qianfan
+uv sync --extra all
 uv sync --extra all --group dev
 ```

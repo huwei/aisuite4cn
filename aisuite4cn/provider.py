@@ -13,7 +13,7 @@ class LLMError(Exception):
 
 class Provider(ABC):
     @abstractmethod
-    def chat_completions_create(self, model, messages):
+    def chat_completions_create(self, model, messages, **kwargs):
         """Abstract method for chat completion calls, to be implemented by each provider."""
         pass
 
@@ -26,9 +26,16 @@ class Provider(ABC):
     async def async_chat_completions_parse(self, model, messages, **kwargs):
         pass
 
-
     @abstractmethod
     def async_chat_completions_stream(self, model, messages, **kwargs):
+        pass
+
+    @abstractmethod
+    def embeddings_create(self, model, input, **kwargs):
+        pass
+
+    @abstractmethod
+    async def async_embeddings_create(self, model, input, **kwargs):
         pass
 
 
@@ -64,5 +71,3 @@ class ProviderFactory:
         """List all supported provider names based on files present in the providers directory."""
         provider_files = Path(cls.PROVIDERS_DIR).glob("*_provider.py")
         return {file.stem.replace("_provider", "") for file in provider_files}
-
-

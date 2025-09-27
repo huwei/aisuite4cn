@@ -3,6 +3,25 @@ from abc import ABC
 from .provider import ProviderFactory
 
 
+def _get_provider_key_and_model_name(model) -> tuple[str, str]:
+    """
+    Extract the provider key and model name from the model string.
+    :param model: model, example: 'provider:model'
+    :return: provider_key, model_name
+    """
+    if ":" not in model:
+        raise ValueError(
+            f"Invalid model format. Expected 'provider:model', got '{model}'"
+        )
+    # Find the first ':' to split provider_key and model_name
+    separator_index = model.find(':')
+    if separator_index == -1:
+        raise ValueError("Model identifier must contain a ':' to specify the provider key and model name.")
+    model_name = model[separator_index + 1:]
+    provider_key = model[:separator_index]
+    return provider_key, model_name
+
+
 class Client:
     def __init__(self, provider_configs=None):
         """
@@ -28,6 +47,7 @@ class Client:
         self.providers = {}
         self.provider_configs = provider_configs
         self._chat = None
+        self._embeddings = None
         self._initialize_providers()
 
     def _initialize_providers(self):
@@ -70,6 +90,14 @@ class Client:
         return self._chat
 
 
+    @property
+    def embeddings(self):
+        """Return the embeddings API interface."""
+        if not self._embeddings:
+            self._embeddings = Embeddings(self)
+        return self._embeddings
+
+
 class AsyncClient(Client):
 
     @property
@@ -78,6 +106,13 @@ class AsyncClient(Client):
         if not self._chat:
             self._chat = AsyncChat(self)
         return self._chat
+
+    @property
+    def embeddings(self):
+        """Return the embeddings API interface."""
+        if not self._embeddings:
+            self._embeddings = AsyncEmbeddings(self)
+        return self._embeddings
 
 
 class Chat:
@@ -102,7 +137,7 @@ class AsyncChat:
         return self._completions
 
 
-class BaseCompletions(ABC):
+class BaseCommon(ABC):
 
     def __init__(self, client):
         self.client = client
@@ -144,7 +179,7 @@ class BaseCompletions(ABC):
         return provider
 
 
-class AsyncCompletions(BaseCompletions):
+class AsyncCompletions(BaseCommon):
 
     def __init__(self, client: "AsyncClient"):
         super().__init__(client)
@@ -154,7 +189,7 @@ class AsyncCompletions(BaseCompletions):
         Create chat completion based on the model, messages, and any extra arguments.
         """
         # Check that correct format is used
-        provider_key, model_name = self._get_provider_key_and_model_name(model)
+        provider_key, model_name = _get_provider_key_and_model_name(model)
 
         provider = self._get_provider(provider_key)
 
@@ -167,7 +202,7 @@ class AsyncCompletions(BaseCompletions):
         Parse chat completion based on the model, messages, and any extra arguments.
         """
         # Check that correct format is used
-        provider_key, model_name = self._get_provider_key_and_model_name(model)
+        provider_key, model_name = _get_provider_key_and_model_name(model)
 
         provider = self._get_provider(provider_key)
 
@@ -179,7 +214,7 @@ class AsyncCompletions(BaseCompletions):
         Stream chat completion based on the model, messages, and any extra arguments.
         """
         # Check that correct format is used
-        provider_key, model_name = self._get_provider_key_and_model_name(model)
+        provider_key, model_name = _get_provider_key_and_model_name(model)
 
         provider = self._get_provider(provider_key)
 
@@ -187,7 +222,7 @@ class AsyncCompletions(BaseCompletions):
         return provider.async_chat_completions_stream(model_name, messages, **kwargs)
 
 
-class Completions(BaseCompletions):
+class Completions(BaseCommon):
 
     def __init__(self, client: "Client"):
         super().__init__(client)
@@ -197,9 +232,38 @@ class Completions(BaseCompletions):
         Create chat completion based on the model, messages, and any extra arguments.
         """
         # Check that correct format is used
-        provider_key, model_name = self._get_provider_key_and_model_name(model)
+        provider_key, model_name = _get_provider_key_and_model_name(model)
 
         provider = self._get_provider(provider_key)
 
         # Delegate the chat completion to the correct provider's implementation
         return provider.chat_completions_create(model_name, messages, **kwargs)
+
+
+
+class Embeddings(BaseCommon):
+    def __init__(self, client: "Client"):
+        super().__init__(client)
+
+    def create(self, model: str, input, **kwargs):
+        # Check that correct format is used
+        provider_key, model_name = _get_provider_key_and_model_name(model)
+
+        provider = self._get_provider(provider_key)
+        return provider.embeddings_create(model_name, input, **kwargs)
+
+
+
+
+class AsyncEmbeddings(BaseCommon):
+    def __init__(self, client: "AsyncClient"):
+        super().__init__(client)
+
+    async def create(self, model: str, input, **kwargs):
+        # Check that correct format is used
+        provider_key, model_name = _get_provider_key_and_model_name(model)
+
+        provider = self._get_provider(provider_key)
+        return await provider.async_embeddings_create(model_name, input, **kwargs)
+
+

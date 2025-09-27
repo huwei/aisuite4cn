@@ -58,6 +58,7 @@ class BaseProvider(Provider):
     def client(self, value):
         """Setter for the OpenAI client."""
         self._client = value
+
     @property
     def async_client(self):
         """Getter for the asynchronous OpenAI client.
@@ -94,8 +95,6 @@ class BaseProvider(Provider):
             **self._compatible_with_openai_kwargs(new_kwargs)
         )
 
-
-
     async def async_chat_completions_create(self, model, messages, **kwargs):
         """Create a chat completion using the OpenAI API."""
         model, messages, new_kwargs = self._prepare_chat_completions_call(model, messages, **kwargs)
@@ -104,7 +103,6 @@ class BaseProvider(Provider):
             messages=messages,
             **self._compatible_with_openai_kwargs(new_kwargs)
         )
-
 
     async def async_chat_completions_parse(self, model, messages, **kwargs):
 
@@ -123,8 +121,22 @@ class BaseProvider(Provider):
             **self._compatible_with_openai_kwargs(new_kwargs)
         )
 
+    def embeddings_create(self, model, input, **kwargs):
+        return self.client.embeddings.create(
+            model=model,
+            input=input,
+            **kwargs
+        )
+
+    async def async_embeddings_create(self, model, input, **kwargs):
+        return await self.async_client.embeddings.create(
+            model=model,
+            input=input,
+            **kwargs
+        )
+
     @staticmethod
-    def _compatible_with_openai_kwargs(kwargs:dict=None) ->  dict:
+    def _compatible_with_openai_kwargs(kwargs: dict = None) -> dict:
         # add logic to convert kwargs to openai compatible kwargs
         new_kwargs = dict(kwargs) if kwargs else {}
         new_extra_body = dict(kwargs.get("extra_body", {}))
@@ -134,4 +146,3 @@ class BaseProvider(Provider):
         if new_extra_body:
             new_kwargs["extra_body"] = new_extra_body
         return new_kwargs
-
