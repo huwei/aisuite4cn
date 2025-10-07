@@ -95,6 +95,25 @@ class BaseProvider(Provider):
             **self._compatible_with_openai_kwargs(new_kwargs)
         )
 
+
+    def chat_completions_parse(self, model, messages, **kwargs):
+        model, messages, new_kwargs = self._prepare_chat_completions_call(model, messages, **kwargs)
+        return self.client.chat.completions.parse(
+            model=model,
+            messages=messages,
+            **self._compatible_with_openai_kwargs(new_kwargs)
+        )
+
+
+    def chat_completions_stream(self, model, messages, **kwargs):
+        model, messages, new_kwargs = self._prepare_chat_completions_call(model, messages, **kwargs)
+        return self.client.chat.completions.stream(
+            model=model,
+            messages=messages,
+            **self._compatible_with_openai_kwargs(new_kwargs)
+        )
+
+
     async def async_chat_completions_create(self, model, messages, **kwargs):
         """Create a chat completion using the OpenAI API."""
         model, messages, new_kwargs = self._prepare_chat_completions_call(model, messages, **kwargs)

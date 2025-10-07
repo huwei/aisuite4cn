@@ -43,4 +43,5 @@ class SparkProvider(BaseProvider):
 
     def _prepare_chat_completions_call(self, model, messages, **kwargs):
         self.client.api_key = self._get_api_key_from_api_key_map(model)
+        self.async_client.api_key = self._get_api_key_from_api_key_map(model)
         return model, messages, kwargs
