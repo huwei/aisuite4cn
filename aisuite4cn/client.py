@@ -240,6 +240,32 @@ class Completions(BaseCommon):
         return provider.chat_completions_create(model_name, messages, **kwargs)
 
 
+    def parse(self, model, messages, **kwargs):
+        """
+        Parse chat completion based on the model, messages, and any extra arguments.
+        """
+        # Check that correct format is used
+        provider_key, model_name = _get_provider_key_and_model_name(model)
+
+        provider = self._get_provider(provider_key)
+
+        # Delegate the chat completion to the correct provider's implementation
+        return provider.chat_completions_parse(model_name, messages, **kwargs)
+
+    def chat_completions_stream(self, model, messages, **kwargs):
+        """
+        Stream chat completion based on the model, messages, and any extra arguments.
+        """
+        # Check that correct format is used
+        provider_key, model_name = _get_provider_key_and_model_name(model)
+
+        provider = self._get_provider(provider_key)
+
+        # Delegate the chat completion to the correct provider's implementation
+        return provider.chat_completions_stream(model_name, messages, **kwargs)
+
+
+
 
 class Embeddings(BaseCommon):
     def __init__(self, client: "Client"):
