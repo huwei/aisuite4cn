@@ -1,6 +1,6 @@
 [project]
 name = "aisuite4cn"
-version = "1.1.1"
+version = "1.1.2"
 description = "Uniform access layer for LLMs of China"
 authors = [{ name = "胡伟", email = "3314672@qq.com" }]
 readme = "README.md"
