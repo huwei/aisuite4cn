@@ -463,8 +463,7 @@ class LlamaIndexClient(FunctionCallingLLM):
             raise ValueError("Audio is not supported for chat streaming")
 
         client = self._get_client()
-
-        all_kwargs = self._get_model_kwargs(stream=True, **kwargs)
+        all_kwargs = self._get_model_kwargs(**{**kwargs, "stream": True})
         message_dicts = to_openai_message_dicts(
             messages,
             model=all_kwargs.get('model'),
@@ -552,7 +551,7 @@ class LlamaIndexClient(FunctionCallingLLM):
     @llm_retry_decorator
     def _stream_complete(self, prompt: str, **kwargs: Any) -> CompletionResponseGen:
         client = self._get_client()
-        all_kwargs = self._get_model_kwargs(stream=True, **kwargs)
+        all_kwargs = self._get_model_kwargs(**{**kwargs, "stream": True})
         self._update_max_tokens(all_kwargs, prompt)
 
         def gen() -> CompletionResponseGen:
@@ -673,8 +672,7 @@ class LlamaIndexClient(FunctionCallingLLM):
     async def astream_complete(
             self, prompt: str, formatted: bool = False, **kwargs: Any
     ) -> CompletionResponseAsyncGen:
-
-        all_kwargs = self._get_model_kwargs(stream=True, **kwargs)
+        all_kwargs = self._get_model_kwargs(**{**kwargs, "stream": True})
         if self._use_chat_completions(all_kwargs):
             astream_complete_fn = astream_chat_to_completion_decorator(
                 self._astream_chat
@@ -730,8 +728,7 @@ class LlamaIndexClient(FunctionCallingLLM):
             raise ValueError("Audio is not supported for chat streaming")
 
         aclient = self._get_aclient()
-
-        all_kwargs = self._get_model_kwargs(stream=True, **kwargs)
+        all_kwargs = self._get_model_kwargs(**{**kwargs, "stream": True})
         message_dicts = to_openai_message_dicts(
             messages,
             model=all_kwargs.get('model'),
@@ -832,7 +829,7 @@ class LlamaIndexClient(FunctionCallingLLM):
             self, prompt: str, **kwargs: Any
     ) -> CompletionResponseAsyncGen:
         aclient = self._get_aclient()
-        all_kwargs = self._get_model_kwargs(stream=True, **kwargs)
+        all_kwargs = self._get_model_kwargs(**{**kwargs, "stream": True})
         self._update_max_tokens(all_kwargs, prompt)
 
         async def gen() -> CompletionResponseAsyncGen:

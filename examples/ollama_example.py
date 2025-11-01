@@ -8,6 +8,16 @@ load_dotenv()
 client = ai.Client()
 
 provider = "ollama"
+model_id = "snowflake-arctic-embed-l-v2.0:latest"
+
+response = client.embeddings.create(
+    model=f"{provider}:{model_id}",
+    input='你好'
+)
+print(response.data[0].embedding)
+
+
+
 # model_id = "deepseek-r1:70b"
 model_id = "qwen2.5:72b"
 

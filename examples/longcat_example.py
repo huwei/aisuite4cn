@@ -11,19 +11,8 @@ client = ai.Client()
 
 async_client = ai.AsyncClient()
 
-provider = "qwen"
-model_id = "text-embedding-v4"
-
-
-response = client.embeddings.create(
-    model=f"{provider}:{model_id}",
-    input='你好'
-)
-print(response.data[0].embedding)
-
-
-
-model_id = "qwen-max"
+provider = "longcat"
+model_id = "LongCat-Flash-Chat"
 
 messages = [
     {"role": "system", "content": "根据用户的问题，输出回答内容，内容返回一个json字符串，包含answer字段"},
