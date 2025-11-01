@@ -124,14 +124,11 @@ https://github.com/openai/openai-python
 ```shell
 poetry install --with dev
 poetry install --with test
-poetry install --extras "all"
-poetry install --extras "all" --with dev
+poetry install --extras "all"`
+poetry install --extras "all" --with=dev,test
 ```
 
 #### 使用 uv：
 ```shell
-uv sync --group dev
-uv sync --group test
-uv sync --extra all
-uv sync --extra all --group dev
+uv sync --extra all --group dev --group test
 ```
