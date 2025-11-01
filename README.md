@@ -122,9 +122,6 @@ https://github.com/openai/openai-python
 
 #### 使用 Poetry：
 ```shell
-poetry install --with dev
-poetry install --with test
-poetry install --extras "all"`
 poetry install --extras "all" --with=dev,test
 ```
 
