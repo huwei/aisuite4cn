@@ -27,6 +27,9 @@ deepseek = ["openai"]
 spark = ["openai"]
 ollama = ["openai"]
 longcat = ["openai"]
+minimax = ["openai"]
+siliconflow = ["openai"]
+dmxapi = ["openai"]
 
 all = ["openai", "qianfan", "llama-index", "agentscope"]
 
