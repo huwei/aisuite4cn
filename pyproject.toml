@@ -30,6 +30,8 @@ longcat = ["openai"]
 minimax = ["openai"]
 siliconflow = ["openai"]
 dmxapi = ["openai"]
+baichuan = ["openai"]
+iflytek = ["openai"]
 
 all = ["openai", "qianfan", "llama-index", "agentscope"]
 
