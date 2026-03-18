@@ -5,7 +5,7 @@ from aisuite4cn.base_provider import BaseProvider
 
 class MinimaxProvider(BaseProvider):
     """
-    A provider for the DMXAPI API.
+    A provider for the MiniMax API.
     """
 
     def __init__(self, **config):
