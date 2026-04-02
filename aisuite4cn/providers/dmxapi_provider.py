@@ -20,5 +20,5 @@ class DmxapiProvider(BaseProvider):
             raise ValueError(
                 "Dmxapi API key is missing. Please provide it in the config or set the DMXAPI_API_KEY environment variable."
             )
-        base_url = current_config.pop("base_url", os.getenv("DMXAPI_BASE_URL", 'https://www.dmxapi.cn/v1/'))
+        base_url = current_config.pop("base_url", os.getenv("DMXAPI_BASE_URL", 'https://www.dmxapi.cn/v1'))
         super().__init__(base_url, **current_config)
