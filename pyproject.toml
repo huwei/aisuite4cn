@@ -1,6 +1,6 @@
 [project]
 name = "aisuite4cn"
-version = "1.1.5"
+version = "1.1.6"
 description = "Uniform access layer for LLMs of China"
 authors = [{ name = "胡伟", email = "3314672@qq.com" }]
 readme = "README.md"
@@ -16,22 +16,25 @@ dependencies = [
 [project.optional-dependencies]
 openai = ["openai>=1.82.1"]
 agentscope = ["agentscope>=1.0.0,<2.0.0"]
-qianfan = ["qianfan>=0.4.12.3", "openai"]
 llama-index = ["llama-index-core>=0.13.4,<0.14.0"]
-moonshot = ["openai"]
 ark = ["openai"]
-qwen = ["openai"]
-hunyuan = ["openai"]
-zhipuai = ["openai"]
+baichuan = ["openai"]
+custom = ["openai"]
+dashscope = ["openai"]
 deepseek = ["openai"]
-spark = ["openai"]
-ollama = ["openai"]
+dmxapi = ["openai"]
+hunyuan = ["openai"]
+iflytek = ["openai"]
 longcat = ["openai"]
 minimax = ["openai"]
+moonshot = ["openai"]
+ollama = ["openai"]
+qianfan = ["qianfan>=0.4.12.3", "openai"]
+qwen = ["openai"]
 siliconflow = ["openai"]
-dmxapi = ["openai"]
-baichuan = ["openai"]
-iflytek = ["openai"]
+spark = ["openai"]
+stepfun = ["openai"]
+zhipuai = ["openai"]
 
 all = ["openai", "qianfan", "llama-index", "agentscope"]
 

@@ -15,10 +15,18 @@
 * Hunyuan（腾讯混元大模型）
 * Ernie（百度文心一言）
 * ZhipuAI（BigModel智谱AI大模型开放平台）
+* DeepSeek（深度求索）
+* Baichuan（百川智能）
+* Spark（讯飞星火）
+* Stepfun（阶跃星辰）
+* Minimax（Minimax）
 * Longcat（美团Longcat大模型）
 * Siliconflow（硅基流动大模型）
 * DMXAPI（中国多模态大模型API聚合平台）
 * Ollama（ [Get up and running with large language models.](https://github.com/ollama/ollama)   ）
+* Yunwu（云雾）
+* iFlytek（讯飞星火）
+* Custom（自定义）
 
 ## 安装
 
@@ -63,10 +71,17 @@ export ZHIPUAI_API_KEY = "your-zhipuai-api-key" #智谱AI api-key，支持ChatGL
 export QIANFAN_ACCESS_KEY = "your-qianfan-access-key" #百度千帆 access key，支持文心一言
 export QIANFAN_SECRET_KEY = "your-qianfan-secret-key" #百度千帆 secret key，支持文心一言
 export DEEPSEEK_API_KEY="your-deepseek-api-key" # deepseek开放平台api-key，支持deepseek
-export SPARK_API_KEY_MAP = "modlename1=your-modelname1-api-key&modlename2=your-modelname1-api-key"
+export BAICHUAN_API_KEY="your-baichuan-api-key" # 百川智能api-key
+export MINIMAX_API_KEY="your-minimax-api-key" # MiniMax api-key
+export STEP_API_KEY="your-step-api-key" # 阶跃星辰 api-key
+export YUNWU_API_KEY="your-yunwu-api-key" # 云雾 api-key
+export SPARK_API_KEY_MAP = "modlename1=your-modelname1-api-key&modlename2=your-modelname1-api-key" # 讯飞星火api-key-map
+export IFLYTEK_API_KEY="your-iflytek-api-key" # 讯飞星火 x2 api-key
 export DMXAPI_API_KEY="your-dmxapi-api-key" # dmxapi api-key，支持dmxapi
 export LONGCAT_API_KEY="your-longcat-api-key" # 美团 longcat api-key
-export SILICONFLOW_API_KEY="your-siliconflow-api-key" # 硅基流api-key，支持硅基流
+export SILICONFLOW_API_KEY="your-siliconflow-api-key" # 硅基流动 api-key，支持硅基流
+export CUSTOM_BASE_URL="your-custom-base-url" # 自定义提供商的base-url
+export CUSTOM_API_KEY="your-custom-api-key" # 自定义提供商的api-key
 ```
 
 使用python客户端
@@ -116,22 +131,5 @@ https://github.com/andrewyng/aisuite
 https://github.com/openai/openai-python
 
 
-## Develop Guide
-
- pyproject.toml 文件现在完全符合 PEP 621 标准，并包含 uv 和 Poetry 都能识别和使用的配置。这确保了团队成员无论使用 poetry 还是 uv 都能获得一致的依赖管理体验。
-
-#### 使用 Poetry：
-```shell
-poetry install --with dev
-poetry install --with test
-poetry install --extras "all"
-poetry install --extras "all" --with dev
-```
-
-#### 使用 uv：
-```shell
-uv sync --group dev
-uv sync --group test
-uv sync --extra all
-uv sync --extra all --group dev
-```
+## Development Guide
+Please refer to [DEVELOPMENT.md](DEVELOPMENT.md) for detailed development and installation instructions.
