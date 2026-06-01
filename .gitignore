@@ -11,6 +11,7 @@ uv.lock
 
 # pypi
 publish.sh
+publish_uv.sh
 
 # venv
 .venv/
