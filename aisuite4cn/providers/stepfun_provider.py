@@ -16,7 +16,7 @@ class StepfunProvider(BaseProvider):
         # Ensure API key (STEP_API_KEY) is provided either in config or via environment variable
 
         current_config = dict(config)
-        current_config.setdefault("api_key", os.getenv("STEP_API_KEY"))
+        current_config.setdefault("api_key", os.getenv("DMXAPI_API_KEY", None))
         if not current_config['api_key']:
             raise ValueError(
                 "Stepfun API key is missing. Please provide it in the config or set the STEP_API_KEY environment variable."
