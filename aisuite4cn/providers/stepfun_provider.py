@@ -7,6 +7,7 @@ class StepfunProvider(BaseProvider):
     """
     Stepfun Provider
     """
+
     def __init__(self, **config):
         """
         Initialize the Stepfun provider with the given configuration.
@@ -21,6 +22,5 @@ class StepfunProvider(BaseProvider):
                 "Stepfun API key is missing. Please provide it in the config or set the STEP_API_KEY environment variable."
             )
 
-        super().__init__('https://api.stepfun.com/v1',
-                         **current_config)
-
+        base_url = current_config.pop("base_url", os.getenv("STEP_BASE_URL", 'https://api.stepfun.com/v1'))
+        super().__init__(base_url, **current_config)

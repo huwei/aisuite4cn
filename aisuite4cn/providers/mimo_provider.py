@@ -20,5 +20,5 @@ class MimoProvider(BaseProvider):
             raise ValueError(
                 "Mimo API key is missing. Please provide it in the config or set the MIMO_API_KEY environment variable."
             )
-        base_url = current_config.pop("base_url", os.getenv("MIMO_API_KEY", 'https://api.xiaomimimo.com/v1'))
+        base_url = current_config.pop("base_url", os.getenv("MIMO_BASE_URL", 'https://api.xiaomimimo.com/v1'))
         super().__init__(base_url, **current_config)
