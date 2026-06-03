@@ -34,16 +34,12 @@ OPENAI_PARAMS = [
     "top_logprobs",
     "top_p",
     "user",
-    "verbosity"
-]
-
-# openai SDK 客户端级别参数，不属于 API 请求体，应直接透传
-OPENAI_SDK_PARAMS = {
+    "verbosity",
     "timeout",
     "extra_headers",
     "extra_query",
-    "extra_body",
-}
+    "extra_body"
+]
 
 
 class BaseProvider(Provider):
@@ -103,7 +99,6 @@ class BaseProvider(Provider):
             **self._compatible_with_openai_kwargs(new_kwargs)
         )
 
-
     def chat_completions_parse(self, model, messages, **kwargs):
         model, messages, new_kwargs = self._prepare_chat_completions_call(model, messages, **kwargs)
         return self.client.chat.completions.parse(
@@ -112,7 +107,6 @@ class BaseProvider(Provider):
             **self._compatible_with_openai_kwargs(new_kwargs)
         )
 
-
     def chat_completions_stream(self, model, messages, **kwargs):
         model, messages, new_kwargs = self._prepare_chat_completions_call(model, messages, **kwargs)
         return self.client.chat.completions.stream(
@@ -120,7 +114,6 @@ class BaseProvider(Provider):
             messages=messages,
             **self._compatible_with_openai_kwargs(new_kwargs)
         )
-
 
     async def async_chat_completions_create(self, model, messages, **kwargs):
         """Create a chat completion using the OpenAI API."""
@@ -170,9 +163,6 @@ class BaseProvider(Provider):
         new_kwargs = dict(kwargs)
         new_extra_body = dict(kwargs.get("extra_body", {}))
         for k, v in kwargs.items():
-            # SDK 客户端参数直接透传，不放进 extra_body
-            if k in OPENAI_SDK_PARAMS:
-                continue
             if k not in OPENAI_PARAMS:
                 new_extra_body[k] = new_kwargs.pop(k)
         if new_extra_body:
