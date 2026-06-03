@@ -37,6 +37,14 @@ OPENAI_PARAMS = [
     "verbosity"
 ]
 
+# openai SDK 客户端级别参数，不属于 API 请求体，应直接透传
+OPENAI_SDK_PARAMS = {
+    "timeout",
+    "extra_headers",
+    "extra_query",
+    "extra_body",
+}
+
 
 class BaseProvider(Provider):
     """Base class for all openai compatible providers."""
@@ -157,9 +165,14 @@ class BaseProvider(Provider):
     @staticmethod
     def _compatible_with_openai_kwargs(kwargs: dict = None) -> dict:
         # add logic to convert kwargs to openai compatible kwargs
-        new_kwargs = dict(kwargs) if kwargs else {}
+        if not kwargs:
+            return {}
+        new_kwargs = dict(kwargs)
         new_extra_body = dict(kwargs.get("extra_body", {}))
         for k, v in kwargs.items():
+            # SDK 客户端参数直接透传，不放进 extra_body
+            if k in OPENAI_SDK_PARAMS:
+                continue
             if k not in OPENAI_PARAMS:
                 new_extra_body[k] = new_kwargs.pop(k)
         if new_extra_body:
