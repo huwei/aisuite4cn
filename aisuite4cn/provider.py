@@ -3,6 +3,8 @@ import importlib
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+from aisuite4cn.utils.str_utils import to_pascal_case, to_snake_case
+
 
 class LLMError(Exception):
     """Custom exception for LLM errors."""
@@ -48,8 +50,8 @@ class ProviderFactory:
     def create_provider(cls, provider_key, config):
         """Dynamically load and create an instance of a provider based on the naming convention."""
         # Convert provider_key to the expected module and class names
-        provider_class_name = f"{provider_key.capitalize()}Provider"
-        provider_module_name = f"{provider_key}_provider"
+        provider_class_name = f"{to_pascal_case(provider_key)}Provider"
+        provider_module_name = f"{to_snake_case(provider_key)}_provider"
 
         module_path = f"aisuite4cn.providers.{provider_module_name}"
 

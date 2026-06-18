@@ -1,6 +1,7 @@
 from abc import ABC
 
 from .provider import ProviderFactory
+from .utils.str_utils import to_snake_case
 
 
 def _get_provider_key_and_model_name(model) -> tuple[str, str]:
@@ -18,7 +19,7 @@ def _get_provider_key_and_model_name(model) -> tuple[str, str]:
     if separator_index == -1:
         raise ValueError("Model identifier must contain a ':' to specify the provider key and model name.")
     model_name = model[separator_index + 1:]
-    provider_key = model[:separator_index]
+    provider_key = to_snake_case(model[:separator_index])
     return provider_key, model_name
 
 
@@ -64,7 +65,7 @@ class Client:
         """
         supported_providers = ProviderFactory.get_supported_providers()
 
-        if provider_key not in supported_providers:
+        if to_snake_case(provider_key) not in supported_providers:
             raise ValueError(
                 f"Invalid provider key '{provider_key}'. Supported providers: {supported_providers}. "
                 "Make sure the model string is formatted correctly as 'provider:model'."
