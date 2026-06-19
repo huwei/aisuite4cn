@@ -40,6 +40,38 @@ class Provider(ABC):
     async def async_embeddings_create(self, model, input, **kwargs):
         pass
 
+    # ---- Responses API ----
+
+    @abstractmethod
+    def responses_create(self, model, input, **kwargs):
+        """Create a response using the Responses API."""
+        pass
+
+    @abstractmethod
+    def responses_parse(self, model, input, **kwargs):
+        """Parse a response using the Responses API."""
+        pass
+
+    @abstractmethod
+    def responses_stream(self, model, input, **kwargs):
+        """Stream a response using the Responses API."""
+        pass
+
+    @abstractmethod
+    async def async_responses_create(self, model, input, **kwargs):
+        """Create a response using the Responses API (async)."""
+        pass
+
+    @abstractmethod
+    async def async_responses_parse(self, model, input, **kwargs):
+        """Parse a response using the Responses API (async)."""
+        pass
+
+    @abstractmethod
+    def async_responses_stream(self, model, input, **kwargs):
+        """Stream a response using the Responses API (async)."""
+        pass
+
 
 class ProviderFactory:
     """Factory to dynamically load provider instances based on naming conventions."""
