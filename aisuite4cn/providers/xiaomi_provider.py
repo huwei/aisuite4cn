@@ -1,6 +1,3 @@
-import os
-
-from aisuite4cn.base_provider import BaseProvider
 from aisuite4cn.providers.mimo_provider import MimoProvider
 
 

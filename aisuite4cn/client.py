@@ -49,6 +49,7 @@ class Client:
         self.provider_configs = provider_configs
         self._chat = None
         self._embeddings = None
+        self._responses = None
         self._initialize_providers()
 
     def _initialize_providers(self):
@@ -98,6 +99,13 @@ class Client:
             self._embeddings = Embeddings(self)
         return self._embeddings
 
+    @property
+    def responses(self):
+        """Return the responses API interface."""
+        if not self._responses:
+            self._responses = Responses(self)
+        return self._responses
+
 
 class AsyncClient(Client):
 
@@ -114,6 +122,13 @@ class AsyncClient(Client):
         if not self._embeddings:
             self._embeddings = AsyncEmbeddings(self)
         return self._embeddings
+
+    @property
+    def responses(self):
+        """Return the responses API interface."""
+        if not self._responses:
+            self._responses = AsyncResponses(self)
+        return self._responses
 
 
 class Chat:
@@ -292,5 +307,51 @@ class AsyncEmbeddings(BaseCommon):
 
         provider = self._get_provider(provider_key)
         return await provider.async_embeddings_create(model_name, input, **kwargs)
+
+
+class Responses(BaseCommon):
+    def __init__(self, client: "Client"):
+        super().__init__(client)
+
+    def create(self, model: str, input, **kwargs):
+        """Create a response using the Responses API."""
+        provider_key, model_name = _get_provider_key_and_model_name(model)
+        provider = self._get_provider(provider_key)
+        return provider.responses_create(model_name, input, **kwargs)
+
+    def parse(self, model, input, **kwargs):
+        """Parse a response using the Responses API."""
+        provider_key, model_name = _get_provider_key_and_model_name(model)
+        provider = self._get_provider(provider_key)
+        return provider.responses_parse(model_name, input, **kwargs)
+
+    def stream(self, model, input, **kwargs):
+        """Stream a response using the Responses API."""
+        provider_key, model_name = _get_provider_key_and_model_name(model)
+        provider = self._get_provider(provider_key)
+        return provider.responses_stream(model_name, input, **kwargs)
+
+
+class AsyncResponses(BaseCommon):
+    def __init__(self, client: "AsyncClient"):
+        super().__init__(client)
+
+    async def create(self, model: str, input, **kwargs):
+        """Create a response using the Responses API (async)."""
+        provider_key, model_name = _get_provider_key_and_model_name(model)
+        provider = self._get_provider(provider_key)
+        return await provider.async_responses_create(model_name, input, **kwargs)
+
+    async def parse(self, model, input, **kwargs):
+        """Parse a response using the Responses API (async)."""
+        provider_key, model_name = _get_provider_key_and_model_name(model)
+        provider = self._get_provider(provider_key)
+        return await provider.async_responses_parse(model_name, input, **kwargs)
+
+    def stream(self, model, input, **kwargs):
+        """Stream a response using the Responses API (async)."""
+        provider_key, model_name = _get_provider_key_and_model_name(model)
+        provider = self._get_provider(provider_key)
+        return provider.async_responses_stream(model_name, input, **kwargs)
 
 

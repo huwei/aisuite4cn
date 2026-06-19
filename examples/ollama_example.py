@@ -19,11 +19,11 @@ print(response.data[0].embedding)
 
 
 # model_id = "deepseek-r1:70b"
-model_id = "qwen2.5:72b"
+model_id = "qwen3:30b"
 
 messages = [
     {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": "What’s the weather like in San Francisco?"},
+    {"role": "user", "content": "请模拟一下有思考模式输出的方式，要求先思考后回答。例如：<think>xxxx</think> xxxxx"},
 ]
 
 response = client.chat.completions.create(
@@ -33,11 +33,20 @@ response = client.chat.completions.create(
 )
 
 # stream = true
-
+is_first_conent = True
+is_first_thinking = True
 for chunk in response:
-
     if chunk.choices[0].delta.content:
+        if is_first_conent:
+            print("\ncontent:")
+            is_first_conent = False
         print(chunk.choices[0].delta.content, end='')
+
+    if hasattr(chunk.choices[0].delta, "reasoning_content") and chunk.choices[0].delta.reasoning_content:
+        if is_first_thinking:
+            print("\nthinking:")
+            is_first_thinking = False
+        print(chunk.choices[0].delta.reasoning_content, end='')
 
 # stream = false
 
@@ -47,5 +56,8 @@ response = client.chat.completions.create(
     stream=False
 )
 
+if hasattr(response.choices[0].message, "reasoning_content") and response.choices[0].message.reasoning_content:
+    print('thinking:')
+    print(response.choices[0].message.reasoning_content)
 print('content:')
 print(response.choices[0].message.content)
