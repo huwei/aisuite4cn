@@ -1,6 +1,6 @@
 [project]
 name = "aisuite4cn"
-version = "1.1.10"
+version = "1.1.11"
 description = "Uniform access layer for LLMs of China"
 authors = [{ name = "胡伟", email = "3314672@qq.com" }]
 readme = "README.md"
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-openai = ["openai>=1.82.1"]
+openai = ["openai>=2.43.0"]
 agentscope = ["agentscope>=1.0.0,<2.0.0"]
 llama-index = ["llama-index-core>=0.13.4,<0.14.0"]
 ark = ["openai"]
