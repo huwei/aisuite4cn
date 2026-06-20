@@ -40,8 +40,9 @@ Model strings use format `provider:model-name` (e.g., `qwen:qwen-max`, `deepseek
 
 ## Conventions
 
-- Most providers are OpenAI-compatible and extend `BaseProvider` (which uses the `openai` SDK). Only `qianfan` and `agentscope` have non-trivial implementations.
-- Env var naming: `<PROVIDER>_API_KEY` (e.g., `DEEPSEEK_API_KEY`, `MOONSHOT_API_KEY`). Special cases: `ARK_MODEL_MAP` for Doubao, `SPARK_API_KEY_MAP` for Spark.
+- Most providers are OpenAI-compatible and extend `BaseProvider` (which uses the `openai` SDK). Non-trivial implementations: `qianfan` (IAM bearer token auth), `ollama` (think-tag streaming parser), `hermes_agent` (custom SSE decoder for tool progress events).
+- Env var naming: `<PROVIDER>_API_KEY` (e.g., `DEEPSEEK_API_KEY`, `MOONSHOT_API_KEY`). Special cases: `SPARK_API_KEY_MAP` (model-to-key mapping), `QIANFAN_ACCESS_KEY`/`QIANFAN_SECRET_KEY` (IAM auth), `OLLAMA_BASE_URL`/`HERMES_AGENT_BASE_URL`/`CUSTOM_BASE_URL` (base URL required).
+- The `dashscope` and `xiaomi` providers are thin aliases that inherit from `qwen` and `mimo` respectively.
 - The PyPI mirror is set to Alibaba Cloud (`mirrors.aliyun.com`) in both `pyproject.toml` and `uv.lock`.
 
 ## Gotchas
