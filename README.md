@@ -65,11 +65,12 @@ pip install 'aisuite4cn[all]'
 ```
 
 ## 配置
-你需要为你打算使用的提供商获取 API 密钥。你需要单独安装或在安装 `aisuite4cn` 时安装特定提供商的库。
-API 密钥可以设置为环境变量，也可以作为配置传递给 `aisuite4cn` 客户端构造函数。你可以使用工具如 `python-dotenv` 或 `direnv` 来手动设置环境变量。
-以下是一个简短的示例，展示如何使用 `aisuite4cn` 从 qwen 和 moonshot 生成聊天完成响应。
 
-设置API keys.
+你需要为你打算使用的提供商获取 API 密钥。API 密钥有两种配置方式：
+
+### 方式一：环境变量
+
+设置环境变量后，客户端会自动读取。你可以使用工具如 `python-dotenv` 或 `direnv` 来手动设置环境变量。
 
 ```shell
 # Moonshot（月之暗面）
@@ -139,7 +140,35 @@ export CUSTOM_BASE_URL="your-custom-base-url"
 export CUSTOM_API_KEY="your-custom-api-key"
 ```
 
-使用python客户端
+### 方式二：通过 `provider_configs` 参数传入
+
+在初始化 `Client` 时，可以通过 `provider_configs` 字典直接传入各提供商的配置，无需设置环境变量。
+
+```python
+import aisuite4cn as ai
+
+client = ai.Client(provider_configs={
+    "qwen": {"api_key": "your-dashscope-api-key"},
+    "moonshot": {"api_key": "your-moonshot-api-key"},
+    "deepseek": {"api_key": "your-deepseek-api-key"},
+    "ark": {"api_key": "your-ark-api-key"},
+    "ollama": {"base_url": "http://localhost:11434/v1"},
+    "custom": {"base_url": "your-custom-base-url", "api_key": "your-custom-api-key"},
+})
+```
+
+也可以在初始化后通过 `configure()` 方法动态添加或更新配置：
+
+```python
+client = ai.Client()
+client.configure({
+    "qwen": {"api_key": "your-dashscope-api-key"},
+})
+```
+
+> **说明**：通过 `provider_configs` 传入的配置优先级高于环境变量。配置字典的 key 为提供商名称（如 `qwen`、`moonshot`），value 为该提供商 `__init__` 方法接受的参数字典（通常包含 `api_key`，部分提供商还支持 `base_url`）。
+
+### 使用示例
 ```python
 import aisuite4cn as ai
 client = ai.Client()
