@@ -99,6 +99,9 @@ def responses_stream():
                 status = item.status
                 print(f"  状态: {status}")
 
+        elif event_type == "response.reasoning_summary_text.delta":
+            print(event.delta, end="", flush=True)
+
         elif event_type == "response.output_text.delta":
             print(event.delta, end="", flush=True)
 
