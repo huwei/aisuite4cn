@@ -1,6 +1,6 @@
 [project]
 name = "aisuite4cn"
-version = "1.1.12"
+version = "1.1.13"
 description = "Uniform access layer for LLMs of China"
 authors = [{ name = "胡伟", email = "3314672@qq.com" }]
 readme = "README.md"
@@ -31,6 +31,7 @@ mimo = ["openai"]
 minimax = ["openai"]
 moonshot = ["openai"]
 ollama = ["openai"]
+openclaw = ["openai"]
 qianfan = ["qianfan>=0.4.12.3", "openai"]
 qwen = ["openai"]
 siliconflow = ["openai"]
