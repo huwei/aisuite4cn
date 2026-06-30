@@ -14,15 +14,14 @@ responses API shape defined by ``openai.types.responses``.
 from __future__ import annotations
 
 import time
-import uuid
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 
+from aisuite4cn.utils.str_utils import generate_id
 from openai import AsyncStream, Stream
 from openai.types.chat import ChatCompletion
 from openai.types.chat.chat_completion import Choice
 from openai.types.chat.chat_completion_chunk import (
     ChatCompletionChunk,
-    Choice as ChunkChoice,
     ChoiceDelta as ChunkChoiceDelta,
 )
 from openai.types.completion_usage import CompletionUsage
@@ -36,12 +35,15 @@ from openai.types.responses import (
     ResponseOutputItemDoneEvent,
     ResponseOutputMessage,
     ResponseOutputText,
+    ResponseReasoningItem,
+    ResponseReasoningTextDeltaEvent,
+    ResponseReasoningTextDoneEvent,
     ResponseStreamEvent,
     ResponseTextDeltaEvent,
     ResponseTextDoneEvent,
     ResponseUsage,
 )
-from openai.types.responses.response_output_text import AnnotationFileCitation
+from openai.types.responses.response_reasoning_item import Content as ReasoningContent
 from openai.types.responses.response_usage import (
     InputTokensDetails,
     OutputTokensDetails,
@@ -170,11 +172,6 @@ def responses_input_to_messages(
 # ---------------------------------------------------------------------------
 
 
-def _generate_id(prefix: str = "") -> str:
-    """Generate a unique id string, optionally prefixed."""
-    return prefix + uuid.uuid4().hex[:24]
-
-
 def chat_completion_to_response(
     chat_response: ChatCompletion,
     *,
@@ -197,7 +194,7 @@ def chat_completion_to_response(
         A fully-populated Responses API response object.
     """
     if response_id is None:
-        response_id = _generate_id("resp_")
+        response_id = generate_id("resp_")
 
     choice: Choice = chat_response.choices[0] if chat_response.choices else Choice(
         finish_reason="stop",
@@ -208,7 +205,32 @@ def chat_completion_to_response(
     message = choice.message
     content_text: str = message.content or ""
 
-    msg_id = _generate_id("msg_")
+    # Check for reasoning_content (deepseek-r1, qwen3, etc. expose
+    # chain-of-thought reasoning via this extra field on the message).
+    reasoning_text: Optional[str] = getattr(message, "reasoning_content", None)
+    if reasoning_text is None:
+        reasoning_text = (message.model_extra or {}).get("reasoning_content")
+
+    output_items: list = []
+
+    if reasoning_text:
+        reasoning_id = generate_id("rs_")
+        output_items.append(
+            ResponseReasoningItem(
+                id=reasoning_id,
+                type="reasoning",
+                summary=[],
+                content=[
+                    ReasoningContent(
+                        type="reasoning_text",
+                        text=reasoning_text,
+                    )
+                ],
+                status="completed",
+            )
+        )
+
+    msg_id = generate_id("msg_")
     output_item = ResponseOutputMessage(
         id=msg_id,
         type="message",
@@ -222,6 +244,7 @@ def chat_completion_to_response(
             )
         ],
     )
+    output_items.append(output_item)
 
     usage: Optional[CompletionUsage] = chat_response.usage
     response_usage: Optional[ResponseUsage] = None
@@ -239,7 +262,7 @@ def chat_completion_to_response(
         created_at=float(chat_response.created),
         model=chat_response.model,
         object="response",
-        output=[output_item],
+        output=output_items,
         parallel_tool_calls=True,
         tool_choice="auto",
         tools=[],
@@ -367,74 +390,183 @@ def _build_stream_events(
         response=empty_resp,
     )
 
-    # -- response.output_item.added -----------------------------------------
-    output_msg = ResponseOutputMessage(
-        id=msg_id,
-        type="message",
-        role="assistant",
-        status="in_progress",
-        content=[],
-    )
-    yield ResponseOutputItemAddedEvent(
-        type="response.output_item.added",
-        sequence_number=2,
-        output_index=0,
-        item=output_msg,
-    )
-
-    # -- response.content_part.added ----------------------------------------
-    content_part = ResponseOutputText(
-        type="output_text",
-        text="",
-        annotations=[],
-    )
-    yield ResponseContentPartAddedEvent(
-        type="response.content_part.added",
-        sequence_number=3,
-        item_id=msg_id,
-        output_index=0,
-        content_index=0,
-        part=content_part,
-    )
+    # -- response.output_item.added & response.content_part.added -----------
+    # Emitted lazily in the walk loop below — we canʼt know up-front whether
+    # the model will produce reasoning_content before its first content delta.
 
     # -- Walk the chat stream -----------------------------------------------
-    seq = 4
+    seq = 2
+    output_index = 0
     full_text = ""
+    reasoning_text = ""
     final_usage: Optional[CompletionUsage] = None
 
+    # Phase tracking for reasoning → text transitions.
+    reasoning_started = False
+    reasoning_finished = False
+    text_header_emitted = False
+    reasoning_id = ""
+    msg_id_local = msg_id  # may be re-generated if reasoning occupies output_index 0
+
     for chunk in stream:
+        # Update usage from the chunk if present
+        if chunk.usage is not None:
+            final_usage = chunk.usage
+
         if not chunk.choices:
-            # Update usage from the chunk if present
-            if chunk.usage is not None:
-                final_usage = chunk.usage
             continue
 
         delta: ChunkChoiceDelta = chunk.choices[0].delta
+        reasoning_delta: Optional[str] = getattr(delta, "reasoning_content", None)
+        if reasoning_delta is None:
+            reasoning_delta = (delta.model_extra or {}).get("reasoning_content")
         content_delta = delta.content
 
+        # -- Reasoning phase --------------------------------------------------
+        if reasoning_delta:
+            if not reasoning_started:
+                reasoning_started = True
+                reasoning_id = generate_id("rs_")
+                # Use a distinct message id so the text-phase message gets its
+                # own id (reasoning item occupies output_index=0).
+                msg_id_local = generate_id("msg_")
+
+                # Emit reasoning output_item.added
+                reasoning_msg = ResponseReasoningItem(
+                    id=reasoning_id,
+                    type="reasoning",
+                    summary=[],
+                    status="in_progress",
+                )
+                yield ResponseOutputItemAddedEvent(
+                    type="response.output_item.added",
+                    sequence_number=seq,
+                    output_index=output_index,
+                    item=reasoning_msg,
+                )
+                seq += 1
+
+                # Emit reasoning content_part.added
+                reasoning_part = ResponseOutputText(
+                    type="output_text",
+                    text="",
+                    annotations=[],
+                )
+                yield ResponseContentPartAddedEvent(
+                    type="response.content_part.added",
+                    sequence_number=seq,
+                    item_id=reasoning_id,
+                    output_index=output_index,
+                    content_index=0,
+                    part=reasoning_part,
+                )
+                seq += 1
+
+            reasoning_text += reasoning_delta
+            yield ResponseReasoningTextDeltaEvent(
+                type="response.reasoning_text.delta",
+                sequence_number=seq,
+                item_id=reasoning_id,
+                output_index=output_index,
+                content_index=0,
+                delta=reasoning_delta,
+            )
+            seq += 1
+
+        # -- Transition: reasoning finished → emit done + switch to text -------
+        if reasoning_started and not reasoning_finished:
+            finish = getattr(chunk.choices[0], "finish_reason", None)
+            if content_delta or finish:
+                reasoning_finished = True
+
+                yield ResponseReasoningTextDoneEvent(
+                    type="response.reasoning_text.done",
+                    sequence_number=seq,
+                    item_id=reasoning_id,
+                    output_index=output_index,
+                    content_index=0,
+                    text=reasoning_text,
+                )
+                seq += 1
+
+                completed_reasoning = ResponseReasoningItem(
+                    id=reasoning_id,
+                    type="reasoning",
+                    summary=[],
+                    content=[
+                        ReasoningContent(
+                            type="reasoning_text",
+                            text=reasoning_text,
+                        )
+                    ],
+                    status="completed",
+                )
+                yield ResponseOutputItemDoneEvent(
+                    type="response.output_item.done",
+                    sequence_number=seq,
+                    output_index=output_index,
+                    item=completed_reasoning,
+                )
+                seq += 1
+
+                # Advance to text phase (output_index 1)
+                output_index += 1
+
+        # -- Text phase -------------------------------------------------------
         if content_delta:
+            if not text_header_emitted:
+                text_header_emitted = True
+
+                # Emit message output_item.added
+                output_msg = ResponseOutputMessage(
+                    id=msg_id_local,
+                    type="message",
+                    role="assistant",
+                    status="in_progress",
+                    content=[],
+                )
+                yield ResponseOutputItemAddedEvent(
+                    type="response.output_item.added",
+                    sequence_number=seq,
+                    output_index=output_index,
+                    item=output_msg,
+                )
+                seq += 1
+
+                # Emit text content_part.added
+                text_part = ResponseOutputText(
+                    type="output_text",
+                    text="",
+                    annotations=[],
+                )
+                yield ResponseContentPartAddedEvent(
+                    type="response.content_part.added",
+                    sequence_number=seq,
+                    item_id=msg_id_local,
+                    output_index=output_index,
+                    content_index=0,
+                    part=text_part,
+                )
+                seq += 1
+
             full_text += content_delta
             yield ResponseTextDeltaEvent(
                 type="response.output_text.delta",
                 sequence_number=seq,
-                item_id=msg_id,
-                output_index=0,
+                item_id=msg_id_local,
+                output_index=output_index,
                 content_index=0,
                 delta=content_delta,
                 logprobs=[],
             )
             seq += 1
 
-        # Capture usage from any chunk that carries it
-        if chunk.usage is not None:
-            final_usage = chunk.usage
-
     # -- response.output_text.done ------------------------------------------
     yield ResponseTextDoneEvent(
         type="response.output_text.done",
         sequence_number=seq,
-        item_id=msg_id,
-        output_index=0,
+        item_id=msg_id_local,
+        output_index=output_index,
         content_index=0,
         text=full_text,
         logprobs=[],
@@ -443,7 +575,7 @@ def _build_stream_events(
 
     # -- response.output_item.done ------------------------------------------
     completed_msg = ResponseOutputMessage(
-        id=msg_id,
+        id=msg_id_local,
         type="message",
         role="assistant",
         status="completed",
@@ -458,7 +590,7 @@ def _build_stream_events(
     yield ResponseOutputItemDoneEvent(
         type="response.output_item.done",
         sequence_number=seq,
-        output_index=0,
+        output_index=output_index,
         item=completed_msg,
     )
     seq += 1
@@ -474,12 +606,31 @@ def _build_stream_events(
             output_tokens_details=OutputTokensDetails(reasoning_tokens=0),
         )
 
+    # Assemble final output list — put reasoning item first if present.
+    final_output: list = []
+    if reasoning_started and reasoning_text:
+        final_output.append(
+            ResponseReasoningItem(
+                id=reasoning_id,
+                type="reasoning",
+                summary=[],
+                content=[
+                    ReasoningContent(
+                        type="reasoning_text",
+                        text=reasoning_text,
+                    )
+                ],
+                status="completed",
+            )
+        )
+    final_output.append(completed_msg)
+
     completed_resp = Response(
         id=response_id,
         created_at=created_at,
         model=model,
         object="response",
-        output=[completed_msg],
+        output=final_output,
         parallel_tool_calls=True,
         tool_choice="auto",
         tools=[],
@@ -527,72 +678,174 @@ async def _build_async_stream_events(
         response=empty_resp,
     )
 
-    # -- response.output_item.added -----------------------------------------
-    output_msg = ResponseOutputMessage(
-        id=msg_id,
-        type="message",
-        role="assistant",
-        status="in_progress",
-        content=[],
-    )
-    yield ResponseOutputItemAddedEvent(
-        type="response.output_item.added",
-        sequence_number=2,
-        output_index=0,
-        item=output_msg,
-    )
-
-    # -- response.content_part.added ----------------------------------------
-    content_part = ResponseOutputText(
-        type="output_text",
-        text="",
-        annotations=[],
-    )
-    yield ResponseContentPartAddedEvent(
-        type="response.content_part.added",
-        sequence_number=3,
-        item_id=msg_id,
-        output_index=0,
-        content_index=0,
-        part=content_part,
-    )
+    # -- response.output_item.added & response.content_part.added -----------
+    # Emitted lazily — see _build_stream_events for rationale.
 
     # -- Walk the chat stream -----------------------------------------------
-    seq = 4
+    seq = 2
+    output_index = 0
     full_text = ""
+    reasoning_text = ""
     final_usage: Optional[CompletionUsage] = None
 
+    # Phase tracking for reasoning → text transitions.
+    reasoning_started = False
+    reasoning_finished = False
+    text_header_emitted = False
+    reasoning_id = ""
+    msg_id_local = msg_id
+
     async for chunk in stream:
+        if chunk.usage is not None:
+            final_usage = chunk.usage
+
         if not chunk.choices:
-            if chunk.usage is not None:
-                final_usage = chunk.usage
             continue
 
         delta: ChunkChoiceDelta = chunk.choices[0].delta
+        reasoning_delta: Optional[str] = getattr(delta, "reasoning_content", None)
+        if reasoning_delta is None:
+            reasoning_delta = (delta.model_extra or {}).get("reasoning_content")
         content_delta = delta.content
 
+        # -- Reasoning phase --------------------------------------------------
+        if reasoning_delta:
+            if not reasoning_started:
+                reasoning_started = True
+                reasoning_id = generate_id("rs_")
+                msg_id_local = generate_id("msg_")
+
+                reasoning_msg = ResponseReasoningItem(
+                    id=reasoning_id,
+                    type="reasoning",
+                    summary=[],
+                    status="in_progress",
+                )
+                yield ResponseOutputItemAddedEvent(
+                    type="response.output_item.added",
+                    sequence_number=seq,
+                    output_index=output_index,
+                    item=reasoning_msg,
+                )
+                seq += 1
+
+                reasoning_part = ResponseOutputText(
+                    type="output_text",
+                    text="",
+                    annotations=[],
+                )
+                yield ResponseContentPartAddedEvent(
+                    type="response.content_part.added",
+                    sequence_number=seq,
+                    item_id=reasoning_id,
+                    output_index=output_index,
+                    content_index=0,
+                    part=reasoning_part,
+                )
+                seq += 1
+
+            reasoning_text += reasoning_delta
+            yield ResponseReasoningTextDeltaEvent(
+                type="response.reasoning_text.delta",
+                sequence_number=seq,
+                item_id=reasoning_id,
+                output_index=output_index,
+                content_index=0,
+                delta=reasoning_delta,
+            )
+            seq += 1
+
+        # -- Transition: reasoning finished → emit done + switch to text -------
+        if reasoning_started and not reasoning_finished:
+            finish = getattr(chunk.choices[0], "finish_reason", None)
+            if content_delta or finish:
+                reasoning_finished = True
+
+                yield ResponseReasoningTextDoneEvent(
+                    type="response.reasoning_text.done",
+                    sequence_number=seq,
+                    item_id=reasoning_id,
+                    output_index=output_index,
+                    content_index=0,
+                    text=reasoning_text,
+                )
+                seq += 1
+
+                completed_reasoning = ResponseReasoningItem(
+                    id=reasoning_id,
+                    type="reasoning",
+                    summary=[],
+                    content=[
+                        ReasoningContent(
+                            type="reasoning_text",
+                            text=reasoning_text,
+                        )
+                    ],
+                    status="completed",
+                )
+                yield ResponseOutputItemDoneEvent(
+                    type="response.output_item.done",
+                    sequence_number=seq,
+                    output_index=output_index,
+                    item=completed_reasoning,
+                )
+                seq += 1
+
+                output_index += 1
+
+        # -- Text phase -------------------------------------------------------
         if content_delta:
+            if not text_header_emitted:
+                text_header_emitted = True
+
+                output_msg = ResponseOutputMessage(
+                    id=msg_id_local,
+                    type="message",
+                    role="assistant",
+                    status="in_progress",
+                    content=[],
+                )
+                yield ResponseOutputItemAddedEvent(
+                    type="response.output_item.added",
+                    sequence_number=seq,
+                    output_index=output_index,
+                    item=output_msg,
+                )
+                seq += 1
+
+                text_part = ResponseOutputText(
+                    type="output_text",
+                    text="",
+                    annotations=[],
+                )
+                yield ResponseContentPartAddedEvent(
+                    type="response.content_part.added",
+                    sequence_number=seq,
+                    item_id=msg_id_local,
+                    output_index=output_index,
+                    content_index=0,
+                    part=text_part,
+                )
+                seq += 1
+
             full_text += content_delta
             yield ResponseTextDeltaEvent(
                 type="response.output_text.delta",
                 sequence_number=seq,
-                item_id=msg_id,
-                output_index=0,
+                item_id=msg_id_local,
+                output_index=output_index,
                 content_index=0,
                 delta=content_delta,
                 logprobs=[],
             )
             seq += 1
 
-        if chunk.usage is not None:
-            final_usage = chunk.usage
-
     # -- response.output_text.done ------------------------------------------
     yield ResponseTextDoneEvent(
         type="response.output_text.done",
         sequence_number=seq,
-        item_id=msg_id,
-        output_index=0,
+        item_id=msg_id_local,
+        output_index=output_index,
         content_index=0,
         text=full_text,
         logprobs=[],
@@ -601,7 +854,7 @@ async def _build_async_stream_events(
 
     # -- response.output_item.done ------------------------------------------
     completed_msg = ResponseOutputMessage(
-        id=msg_id,
+        id=msg_id_local,
         type="message",
         role="assistant",
         status="completed",
@@ -616,7 +869,7 @@ async def _build_async_stream_events(
     yield ResponseOutputItemDoneEvent(
         type="response.output_item.done",
         sequence_number=seq,
-        output_index=0,
+        output_index=output_index,
         item=completed_msg,
     )
     seq += 1
@@ -632,12 +885,31 @@ async def _build_async_stream_events(
             output_tokens_details=OutputTokensDetails(reasoning_tokens=0),
         )
 
+    # Assemble final output list — put reasoning item first if present.
+    final_output: list = []
+    if reasoning_started and reasoning_text:
+        final_output.append(
+            ResponseReasoningItem(
+                id=reasoning_id,
+                type="reasoning",
+                summary=[],
+                content=[
+                    ReasoningContent(
+                        type="reasoning_text",
+                        text=reasoning_text,
+                    )
+                ],
+                status="completed",
+            )
+        )
+    final_output.append(completed_msg)
+
     completed_resp = Response(
         id=response_id,
         created_at=created_at,
         model=model,
         object="response",
-        output=[completed_msg],
+        output=final_output,
         parallel_tool_calls=True,
         tool_choice="auto",
         tools=[],
@@ -719,8 +991,8 @@ class ChatResponsesProvider(BaseProvider):
             chat_stream = self.chat_completions_create(
                 model, messages, stream=True, **chat_kwargs
             )
-            resp_id = _generate_id("resp_")
-            msg_id = _generate_id("msg_")
+            resp_id = generate_id("resp_")
+            msg_id = generate_id("msg_")
             return _build_stream_events(chat_stream, resp_id, msg_id, model)
 
         chat_response = self.chat_completions_create(model, messages, **chat_kwargs)
@@ -770,8 +1042,8 @@ class ChatResponsesProvider(BaseProvider):
         chat_stream = self.chat_completions_create(
             model, messages, stream=True, **chat_kwargs
         )
-        resp_id = _generate_id("resp_")
-        msg_id = _generate_id("msg_")
+        resp_id = generate_id("resp_")
+        msg_id = generate_id("msg_")
         return _build_stream_events(chat_stream, resp_id, msg_id, model)
 
     # ---- Async Responses API ----------------------------------------------
@@ -795,8 +1067,8 @@ class ChatResponsesProvider(BaseProvider):
             chat_stream = await self.async_chat_completions_create(
                 model, messages, stream=True, **chat_kwargs
             )
-            resp_id = _generate_id("resp_")
-            msg_id = _generate_id("msg_")
+            resp_id = generate_id("resp_")
+            msg_id = generate_id("msg_")
             return _build_async_stream_events(chat_stream, resp_id, msg_id, model)
 
         chat_response = await self.async_chat_completions_create(
@@ -856,8 +1128,8 @@ class ChatResponsesProvider(BaseProvider):
         chat_stream = await self.async_chat_completions_create(
             model, messages, stream=True, **chat_kwargs
         )
-        resp_id = _generate_id("resp_")
-        msg_id = _generate_id("msg_")
+        resp_id = generate_id("resp_")
+        msg_id = generate_id("msg_")
         async for event in _build_async_stream_events(
             chat_stream, resp_id, msg_id, model
         ):

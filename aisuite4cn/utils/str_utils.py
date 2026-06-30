@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import re
+import uuid
 
 
 # ... existing code ...
@@ -20,3 +23,8 @@ def to_snake_case(text: str) -> str:
     words = re.split(r'[-_\s]+', text)
     # Convert to lowercase and join with underscores
     return '_'.join(word.lower() for word in words if word)
+
+
+def generate_id(prefix: str = "") -> str:
+    """Generate a unique id string, optionally prefixed."""
+    return prefix + uuid.uuid4().hex

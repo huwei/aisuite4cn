@@ -98,6 +98,8 @@ def responses_stream():
             if item.type == "function_call":
                 print(f"\n[Tool] {item.name} 进行中")
                 print(f"  call_id: {item.call_id}")
+            elif item.type == "reasoning":
+                print(f"\n[Thinking]")
 
         elif event_type == "response.function_call_arguments.done":
             import json
@@ -109,8 +111,13 @@ def responses_stream():
             if item.type == "function_call":
                 status = item.status
                 print(f"  状态: {status}")
+            elif item.type == "reasoning":
+                print(f"\n[Thinking Done]")
 
         elif event_type == "response.reasoning_summary_text.delta":
+            print(event.delta, end="", flush=True)
+
+        elif event_type == "response.reasoning_text.delta":
             print(event.delta, end="", flush=True)
 
         elif event_type == "response.output_text.delta":
@@ -126,6 +133,6 @@ def responses_stream():
 
 
 if __name__ == "__main__":
-    chat_completions_stream()
+    # chat_completions_stream()
     # chat_completions_non_stream()
     responses_stream()
