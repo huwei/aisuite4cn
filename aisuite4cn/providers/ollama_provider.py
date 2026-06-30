@@ -128,6 +128,8 @@ def _build_chunk_from_result(chunk_template, reasoning, content, finish_reason=N
         finish_reason: finish_reason 值
     """
     new_delta = {}
+    if not chunk_template.choices:
+        return chunk_template
     if chunk_template.choices and chunk_template.choices[0].delta.role:
         new_delta["role"] = chunk_template.choices[0].delta.role
     if reasoning:
