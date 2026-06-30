@@ -1,4 +1,7 @@
 import openai
+from openai import AsyncStream, Stream
+from openai.types.responses import ResponseStreamEvent, Response, ParsedResponse
+
 from aisuite4cn.provider import Provider
 
 OPENAI_PARAMS = [
@@ -201,7 +204,11 @@ class BaseProvider(Provider):
     def _prepare_responses_call(self, model, input, **kwargs):
         return model, input, kwargs
 
-    def responses_create(self, model, input, **kwargs):
+    def responses_create(
+            self,
+            model,
+            input,
+            **kwargs) -> Response | Stream[ResponseStreamEvent]:
         """Create a response using the OpenAI Responses API."""
         model, input, new_kwargs = self._prepare_responses_call(model, input, **kwargs)
         return self.client.responses.create(
@@ -226,7 +233,11 @@ class BaseProvider(Provider):
             **self._compatible_with_responses_kwargs(new_kwargs)
         )
 
-    async def async_responses_create(self, model, input, **kwargs):
+    async def async_responses_create(
+            self,
+            model,
+            input,
+            **kwargs) -> Response | AsyncStream[ResponseStreamEvent]:
         """Create a response using the OpenAI Responses API (async)."""
         model, input, new_kwargs = self._prepare_responses_call(model, input, **kwargs)
         return await self.async_client.responses.create(

@@ -1,5 +1,8 @@
 from abc import ABC
 
+from openai import Stream, AsyncStream
+from openai.types.responses import ResponseStreamEvent, Response
+
 from .provider import ProviderFactory
 from .utils.str_utils import to_snake_case
 
@@ -313,7 +316,10 @@ class Responses(BaseCommon):
     def __init__(self, client: "Client"):
         super().__init__(client)
 
-    def create(self, model: str, input, **kwargs):
+    def create(self,
+               model: str,
+               input,
+               **kwargs) -> Response | Stream[ResponseStreamEvent]:
         """Create a response using the Responses API."""
         provider_key, model_name = _get_provider_key_and_model_name(model)
         provider = self._get_provider(provider_key)
@@ -336,7 +342,11 @@ class AsyncResponses(BaseCommon):
     def __init__(self, client: "AsyncClient"):
         super().__init__(client)
 
-    async def create(self, model: str, input, **kwargs):
+    async def create(
+            self,
+            model: str,
+            input,
+            **kwargs) -> Response | AsyncStream[ResponseStreamEvent]:
         """Create a response using the Responses API (async)."""
         provider_key, model_name = _get_provider_key_and_model_name(model)
         provider = self._get_provider(provider_key)
