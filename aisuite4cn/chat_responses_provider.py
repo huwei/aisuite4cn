@@ -30,6 +30,9 @@ from openai.types.responses import (
     ResponseCompletedEvent,
     ResponseContentPartAddedEvent,
     ResponseCreatedEvent,
+    ResponseFunctionCallArgumentsDeltaEvent,
+    ResponseFunctionCallArgumentsDoneEvent,
+    ResponseFunctionToolCall,
     ResponseInProgressEvent,
     ResponseOutputItemAddedEvent,
     ResponseOutputItemDoneEvent,
@@ -230,21 +233,42 @@ def chat_completion_to_response(
             )
         )
 
-    msg_id = generate_id("msg_")
-    output_item = ResponseOutputMessage(
-        id=msg_id,
-        type="message",
-        role="assistant",
-        status="completed",
-        content=[
-            ResponseOutputText(
-                type="output_text",
-                text=content_text,
-                annotations=[],
+    # Convert tool_calls from the assistant message (function calling).
+    tool_calls = getattr(message, "tool_calls", None) or []
+    for tc in tool_calls:
+        tc_type = getattr(tc, "type", None) or "function"
+        if tc_type == "function":
+            func = tc.function
+            output_items.append(
+                ResponseFunctionToolCall(
+                    id=generate_id("tcall_"),
+                    call_id=tc.id,
+                    name=func.name,
+                    arguments=func.arguments,
+                    type="function_call",
+                    status="completed",
+                )
             )
-        ],
-    )
-    output_items.append(output_item)
+
+    msg_id = generate_id("msg_")
+    # Only emit the message item when there is actual text content or
+    # the response is not purely tool-calls.  An empty assistant message
+    # with ``content=None`` is normal when the model only returns tools.
+    if content_text or choice.finish_reason != "tool_calls":
+        output_item = ResponseOutputMessage(
+            id=msg_id,
+            type="message",
+            role="assistant",
+            status="completed",
+            content=[
+                ResponseOutputText(
+                    type="output_text",
+                    text=content_text,
+                    annotations=[],
+                )
+            ],
+        )
+        output_items.append(output_item)
 
     usage: Optional[CompletionUsage] = chat_response.usage
     response_usage: Optional[ResponseUsage] = None
@@ -401,15 +425,17 @@ def _build_stream_events(
     reasoning_text = ""
     final_usage: Optional[CompletionUsage] = None
 
-    # Phase tracking for reasoning → text transitions.
+    # Phase tracking.
     reasoning_started = False
     reasoning_finished = False
     text_header_emitted = False
     reasoning_id = ""
-    msg_id_local = msg_id  # may be re-generated if reasoning occupies output_index 0
+    msg_id_local = msg_id
+
+    # Per-index state for in-flight tool calls: index → {item_id, name, call_id, arguments, header_emitted}
+    tool_states: Dict[int, Dict[str, Any]] = {}
 
     for chunk in stream:
-        # Update usage from the chunk if present
         if chunk.usage is not None:
             final_usage = chunk.usage
 
@@ -417,99 +443,146 @@ def _build_stream_events(
             continue
 
         delta: ChunkChoiceDelta = chunk.choices[0].delta
+        finish_reason = getattr(chunk.choices[0], "finish_reason", None)
+
         reasoning_delta: Optional[str] = getattr(delta, "reasoning_content", None)
         if reasoning_delta is None:
             reasoning_delta = (delta.model_extra or {}).get("reasoning_content")
         content_delta = delta.content
+        tool_deltas = delta.tool_calls or []
 
         # -- Reasoning phase --------------------------------------------------
         if reasoning_delta:
             if not reasoning_started:
                 reasoning_started = True
                 reasoning_id = generate_id("rs_")
-                # Use a distinct message id so the text-phase message gets its
-                # own id (reasoning item occupies output_index=0).
                 msg_id_local = generate_id("msg_")
 
-                # Emit reasoning output_item.added
                 reasoning_msg = ResponseReasoningItem(
-                    id=reasoning_id,
-                    type="reasoning",
-                    summary=[],
-                    status="in_progress",
+                    id=reasoning_id, type="reasoning", summary=[], status="in_progress",
                 )
                 yield ResponseOutputItemAddedEvent(
-                    type="response.output_item.added",
-                    sequence_number=seq,
-                    output_index=output_index,
-                    item=reasoning_msg,
+                    type="response.output_item.added", sequence_number=seq,
+                    output_index=output_index, item=reasoning_msg,
                 )
                 seq += 1
 
-                # Emit reasoning content_part.added
-                reasoning_part = ResponseOutputText(
-                    type="output_text",
-                    text="",
-                    annotations=[],
-                )
+                reasoning_part = ResponseOutputText(type="output_text", text="", annotations=[])
                 yield ResponseContentPartAddedEvent(
-                    type="response.content_part.added",
-                    sequence_number=seq,
-                    item_id=reasoning_id,
-                    output_index=output_index,
-                    content_index=0,
+                    type="response.content_part.added", sequence_number=seq,
+                    item_id=reasoning_id, output_index=output_index, content_index=0,
                     part=reasoning_part,
                 )
                 seq += 1
 
             reasoning_text += reasoning_delta
             yield ResponseReasoningTextDeltaEvent(
-                type="response.reasoning_text.delta",
-                sequence_number=seq,
-                item_id=reasoning_id,
-                output_index=output_index,
-                content_index=0,
+                type="response.reasoning_text.delta", sequence_number=seq,
+                item_id=reasoning_id, output_index=output_index, content_index=0,
                 delta=reasoning_delta,
             )
             seq += 1
 
-        # -- Transition: reasoning finished → emit done + switch to text -------
+        # -- Close reasoning on transition to tools or text --------------------
         if reasoning_started and not reasoning_finished:
-            finish = getattr(chunk.choices[0], "finish_reason", None)
-            if content_delta or finish:
+            if content_delta or tool_deltas or finish_reason:
                 reasoning_finished = True
 
                 yield ResponseReasoningTextDoneEvent(
-                    type="response.reasoning_text.done",
-                    sequence_number=seq,
-                    item_id=reasoning_id,
-                    output_index=output_index,
-                    content_index=0,
+                    type="response.reasoning_text.done", sequence_number=seq,
+                    item_id=reasoning_id, output_index=output_index, content_index=0,
                     text=reasoning_text,
                 )
                 seq += 1
 
                 completed_reasoning = ResponseReasoningItem(
-                    id=reasoning_id,
-                    type="reasoning",
-                    summary=[],
-                    content=[
-                        ReasoningContent(
-                            type="reasoning_text",
-                            text=reasoning_text,
-                        )
-                    ],
+                    id=reasoning_id, type="reasoning", summary=[],
+                    content=[ReasoningContent(type="reasoning_text", text=reasoning_text)],
                     status="completed",
                 )
                 yield ResponseOutputItemDoneEvent(
-                    type="response.output_item.done",
-                    sequence_number=seq,
-                    output_index=output_index,
-                    item=completed_reasoning,
+                    type="response.output_item.done", sequence_number=seq,
+                    output_index=output_index, item=completed_reasoning,
                 )
                 seq += 1
 
-                # Advance to text phase (output_index 1)
+                output_index += 1
+
+        # -- Tool call phase ---------------------------------------------------
+        for tc_delta in tool_deltas:
+            tc_index: int = tc_delta.index
+            state = tool_states.setdefault(tc_index, {
+                "item_id": generate_id("tcall_"),
+                "name": "",
+                "call_id": "",
+                "arguments": "",
+                "header_emitted": False,
+                "finished": False,
+            })
+
+            if tc_delta.id:
+                state["call_id"] = tc_delta.id
+            if tc_delta.function and tc_delta.function.name:
+                state["name"] = tc_delta.function.name
+
+            # Emit output_item.added once we know name + call_id
+            if not state["header_emitted"] and state["call_id"] and state["name"]:
+                state["header_emitted"] = True
+                tc_item = ResponseFunctionToolCall(
+                    id=state["item_id"],
+                    call_id=state["call_id"],
+                    name=state["name"],
+                    arguments="",
+                    type="function_call",
+                    status="in_progress",
+                )
+                yield ResponseOutputItemAddedEvent(
+                    type="response.output_item.added", sequence_number=seq,
+                    output_index=output_index, item=tc_item,
+                )
+                seq += 1
+
+            # Emit arguments delta
+            args_delta = tc_delta.function.arguments if tc_delta.function else None
+            if args_delta:
+                state["arguments"] += args_delta
+                yield ResponseFunctionCallArgumentsDeltaEvent(
+                    type="response.function_call_arguments.delta",
+                    sequence_number=seq, item_id=state["item_id"],
+                    output_index=output_index, delta=args_delta,
+                )
+                seq += 1
+
+        # -- Close completed tool calls ----------------------------------------
+        if finish_reason == "tool_calls" or (
+            # Tool→text transition: close tools if text starts appearing.
+            content_delta and any(not s["finished"] for s in tool_states.values())
+        ):
+            for idx in sorted(tool_states.keys()):
+                s = tool_states[idx]
+                if s["finished"]:
+                    continue
+                s["finished"] = True
+
+                yield ResponseFunctionCallArgumentsDoneEvent(
+                    type="response.function_call_arguments.done",
+                    sequence_number=seq, item_id=s["item_id"],
+                    output_index=output_index, name=s["name"],
+                    arguments=s["arguments"],
+                )
+                seq += 1
+
+                completed_tc = ResponseFunctionToolCall(
+                    id=s["item_id"], call_id=s["call_id"], name=s["name"],
+                    arguments=s["arguments"], type="function_call",
+                    status="completed",
+                )
+                yield ResponseOutputItemDoneEvent(
+                    type="response.output_item.done", sequence_number=seq,
+                    output_index=output_index, item=completed_tc,
+                )
+                seq += 1
+
                 output_index += 1
 
         # -- Text phase -------------------------------------------------------
@@ -562,38 +635,40 @@ def _build_stream_events(
             seq += 1
 
     # -- response.output_text.done ------------------------------------------
-    yield ResponseTextDoneEvent(
-        type="response.output_text.done",
-        sequence_number=seq,
-        item_id=msg_id_local,
-        output_index=output_index,
-        content_index=0,
-        text=full_text,
-        logprobs=[],
-    )
-    seq += 1
+    completed_msg = None
+    if text_header_emitted:
+        yield ResponseTextDoneEvent(
+            type="response.output_text.done",
+            sequence_number=seq,
+            item_id=msg_id_local,
+            output_index=output_index,
+            content_index=0,
+            text=full_text,
+            logprobs=[],
+        )
+        seq += 1
 
-    # -- response.output_item.done ------------------------------------------
-    completed_msg = ResponseOutputMessage(
-        id=msg_id_local,
-        type="message",
-        role="assistant",
-        status="completed",
-        content=[
-            ResponseOutputText(
-                type="output_text",
-                text=full_text,
-                annotations=[],
-            )
-        ],
-    )
-    yield ResponseOutputItemDoneEvent(
-        type="response.output_item.done",
-        sequence_number=seq,
-        output_index=output_index,
-        item=completed_msg,
-    )
-    seq += 1
+        # -- response.output_item.done ------------------------------------------
+        completed_msg = ResponseOutputMessage(
+            id=msg_id_local,
+            type="message",
+            role="assistant",
+            status="completed",
+            content=[
+                ResponseOutputText(
+                    type="output_text",
+                    text=full_text,
+                    annotations=[],
+                )
+            ],
+        )
+        yield ResponseOutputItemDoneEvent(
+            type="response.output_item.done",
+            sequence_number=seq,
+            output_index=output_index,
+            item=completed_msg,
+        )
+        seq += 1
 
     # -- response.completed -------------------------------------------------
     resp_usage: Optional[ResponseUsage] = None
@@ -606,36 +681,32 @@ def _build_stream_events(
             output_tokens_details=OutputTokensDetails(reasoning_tokens=0),
         )
 
-    # Assemble final output list — put reasoning item first if present.
+    # Assemble final output list — reasoning first, then tool calls, then message.
     final_output: list = []
     if reasoning_started and reasoning_text:
         final_output.append(
             ResponseReasoningItem(
-                id=reasoning_id,
-                type="reasoning",
-                summary=[],
-                content=[
-                    ReasoningContent(
-                        type="reasoning_text",
-                        text=reasoning_text,
-                    )
-                ],
+                id=reasoning_id, type="reasoning", summary=[],
+                content=[ReasoningContent(type="reasoning_text", text=reasoning_text)],
                 status="completed",
             )
         )
-    final_output.append(completed_msg)
+    for idx in sorted(tool_states.keys()):
+        s = tool_states[idx]
+        final_output.append(
+            ResponseFunctionToolCall(
+                id=s["item_id"], call_id=s["call_id"], name=s["name"],
+                arguments=s["arguments"], type="function_call",
+                status="completed",
+            )
+        )
+    if completed_msg is not None:
+        final_output.append(completed_msg)
 
     completed_resp = Response(
-        id=response_id,
-        created_at=created_at,
-        model=model,
-        object="response",
-        output=final_output,
-        parallel_tool_calls=True,
-        tool_choice="auto",
-        tools=[],
-        status="completed",
-        usage=resp_usage,
+        id=response_id, created_at=created_at, model=model, object="response",
+        output=final_output, parallel_tool_calls=True, tool_choice="auto",
+        tools=[], status="completed", usage=resp_usage,
     )
     yield ResponseCompletedEvent(
         type="response.completed",
@@ -688,12 +759,15 @@ async def _build_async_stream_events(
     reasoning_text = ""
     final_usage: Optional[CompletionUsage] = None
 
-    # Phase tracking for reasoning → text transitions.
+    # Phase tracking.
     reasoning_started = False
     reasoning_finished = False
     text_header_emitted = False
     reasoning_id = ""
     msg_id_local = msg_id
+
+    # Per-index state for in-flight tool calls.
+    tool_states: Dict[int, Dict[str, Any]] = {}
 
     async for chunk in stream:
         if chunk.usage is not None:
@@ -703,10 +777,13 @@ async def _build_async_stream_events(
             continue
 
         delta: ChunkChoiceDelta = chunk.choices[0].delta
+        finish_reason = getattr(chunk.choices[0], "finish_reason", None)
+
         reasoning_delta: Optional[str] = getattr(delta, "reasoning_content", None)
         if reasoning_delta is None:
             reasoning_delta = (delta.model_extra or {}).get("reasoning_content")
         content_delta = delta.content
+        tool_deltas = delta.tool_calls or []
 
         # -- Reasoning phase --------------------------------------------------
         if reasoning_delta:
@@ -716,78 +793,121 @@ async def _build_async_stream_events(
                 msg_id_local = generate_id("msg_")
 
                 reasoning_msg = ResponseReasoningItem(
-                    id=reasoning_id,
-                    type="reasoning",
-                    summary=[],
-                    status="in_progress",
+                    id=reasoning_id, type="reasoning", summary=[], status="in_progress",
                 )
                 yield ResponseOutputItemAddedEvent(
-                    type="response.output_item.added",
-                    sequence_number=seq,
-                    output_index=output_index,
-                    item=reasoning_msg,
+                    type="response.output_item.added", sequence_number=seq,
+                    output_index=output_index, item=reasoning_msg,
                 )
                 seq += 1
 
-                reasoning_part = ResponseOutputText(
-                    type="output_text",
-                    text="",
-                    annotations=[],
-                )
+                reasoning_part = ResponseOutputText(type="output_text", text="", annotations=[])
                 yield ResponseContentPartAddedEvent(
-                    type="response.content_part.added",
-                    sequence_number=seq,
-                    item_id=reasoning_id,
-                    output_index=output_index,
-                    content_index=0,
+                    type="response.content_part.added", sequence_number=seq,
+                    item_id=reasoning_id, output_index=output_index, content_index=0,
                     part=reasoning_part,
                 )
                 seq += 1
 
             reasoning_text += reasoning_delta
             yield ResponseReasoningTextDeltaEvent(
-                type="response.reasoning_text.delta",
-                sequence_number=seq,
-                item_id=reasoning_id,
-                output_index=output_index,
-                content_index=0,
+                type="response.reasoning_text.delta", sequence_number=seq,
+                item_id=reasoning_id, output_index=output_index, content_index=0,
                 delta=reasoning_delta,
             )
             seq += 1
 
-        # -- Transition: reasoning finished → emit done + switch to text -------
+        # -- Close reasoning on transition to tools or text --------------------
         if reasoning_started and not reasoning_finished:
-            finish = getattr(chunk.choices[0], "finish_reason", None)
-            if content_delta or finish:
+            if content_delta or tool_deltas or finish_reason:
                 reasoning_finished = True
 
                 yield ResponseReasoningTextDoneEvent(
-                    type="response.reasoning_text.done",
-                    sequence_number=seq,
-                    item_id=reasoning_id,
-                    output_index=output_index,
-                    content_index=0,
+                    type="response.reasoning_text.done", sequence_number=seq,
+                    item_id=reasoning_id, output_index=output_index, content_index=0,
                     text=reasoning_text,
                 )
                 seq += 1
 
                 completed_reasoning = ResponseReasoningItem(
-                    id=reasoning_id,
-                    type="reasoning",
-                    summary=[],
-                    content=[
-                        ReasoningContent(
-                            type="reasoning_text",
-                            text=reasoning_text,
-                        )
-                    ],
+                    id=reasoning_id, type="reasoning", summary=[],
+                    content=[ReasoningContent(type="reasoning_text", text=reasoning_text)],
                     status="completed",
                 )
                 yield ResponseOutputItemDoneEvent(
-                    type="response.output_item.done",
-                    sequence_number=seq,
-                    output_index=output_index,
-                    item=completed_reasoning,
+                    type="response.output_item.done", sequence_number=seq,
+                    output_index=output_index, item=completed_reasoning,
+                )
+                seq += 1
+
+                output_index += 1
+
+        # -- Tool call phase ---------------------------------------------------
+        for tc_delta in tool_deltas:
+            tc_index: int = tc_delta.index
+            state = tool_states.setdefault(tc_index, {
+                "item_id": generate_id("tcall_"),
+                "name": "",
+                "call_id": "",
+                "arguments": "",
+                "header_emitted": False,
+                "finished": False,
+            })
+
+            if tc_delta.id:
+                state["call_id"] = tc_delta.id
+            if tc_delta.function and tc_delta.function.name:
+                state["name"] = tc_delta.function.name
+
+            if not state["header_emitted"] and state["call_id"] and state["name"]:
+                state["header_emitted"] = True
+                tc_item = ResponseFunctionToolCall(
+                    id=state["item_id"], call_id=state["call_id"],
+                    name=state["name"], arguments="", type="function_call",
+                    status="in_progress",
+                )
+                yield ResponseOutputItemAddedEvent(
+                    type="response.output_item.added", sequence_number=seq,
+                    output_index=output_index, item=tc_item,
+                )
+                seq += 1
+
+            args_delta = tc_delta.function.arguments if tc_delta.function else None
+            if args_delta:
+                state["arguments"] += args_delta
+                yield ResponseFunctionCallArgumentsDeltaEvent(
+                    type="response.function_call_arguments.delta",
+                    sequence_number=seq, item_id=state["item_id"],
+                    output_index=output_index, delta=args_delta,
+                )
+                seq += 1
+
+        # -- Close completed tool calls ----------------------------------------
+        if finish_reason == "tool_calls" or (
+            content_delta and any(not s["finished"] for s in tool_states.values())
+        ):
+            for idx in sorted(tool_states.keys()):
+                s = tool_states[idx]
+                if s["finished"]:
+                    continue
+                s["finished"] = True
+
+                yield ResponseFunctionCallArgumentsDoneEvent(
+                    type="response.function_call_arguments.done",
+                    sequence_number=seq, item_id=s["item_id"],
+                    output_index=output_index, name=s["name"],
+                    arguments=s["arguments"],
+                )
+                seq += 1
+
+                completed_tc = ResponseFunctionToolCall(
+                    id=s["item_id"], call_id=s["call_id"], name=s["name"],
+                    arguments=s["arguments"], type="function_call",
+                    status="completed",
+                )
+                yield ResponseOutputItemDoneEvent(
+                    type="response.output_item.done", sequence_number=seq,
+                    output_index=output_index, item=completed_tc,
                 )
                 seq += 1
 
@@ -841,38 +961,40 @@ async def _build_async_stream_events(
             seq += 1
 
     # -- response.output_text.done ------------------------------------------
-    yield ResponseTextDoneEvent(
-        type="response.output_text.done",
-        sequence_number=seq,
-        item_id=msg_id_local,
-        output_index=output_index,
-        content_index=0,
-        text=full_text,
-        logprobs=[],
-    )
-    seq += 1
+    completed_msg = None
+    if text_header_emitted:
+        yield ResponseTextDoneEvent(
+            type="response.output_text.done",
+            sequence_number=seq,
+            item_id=msg_id_local,
+            output_index=output_index,
+            content_index=0,
+            text=full_text,
+            logprobs=[],
+        )
+        seq += 1
 
-    # -- response.output_item.done ------------------------------------------
-    completed_msg = ResponseOutputMessage(
-        id=msg_id_local,
-        type="message",
-        role="assistant",
-        status="completed",
-        content=[
-            ResponseOutputText(
-                type="output_text",
-                text=full_text,
-                annotations=[],
-            )
-        ],
-    )
-    yield ResponseOutputItemDoneEvent(
-        type="response.output_item.done",
-        sequence_number=seq,
-        output_index=output_index,
-        item=completed_msg,
-    )
-    seq += 1
+        # -- response.output_item.done ------------------------------------------
+        completed_msg = ResponseOutputMessage(
+            id=msg_id_local,
+            type="message",
+            role="assistant",
+            status="completed",
+            content=[
+                ResponseOutputText(
+                    type="output_text",
+                    text=full_text,
+                    annotations=[],
+                )
+            ],
+        )
+        yield ResponseOutputItemDoneEvent(
+            type="response.output_item.done",
+            sequence_number=seq,
+            output_index=output_index,
+            item=completed_msg,
+        )
+        seq += 1
 
     # -- response.completed -------------------------------------------------
     resp_usage: Optional[ResponseUsage] = None
@@ -885,36 +1007,32 @@ async def _build_async_stream_events(
             output_tokens_details=OutputTokensDetails(reasoning_tokens=0),
         )
 
-    # Assemble final output list — put reasoning item first if present.
+    # Assemble final output list — reasoning first, then tool calls, then message.
     final_output: list = []
     if reasoning_started and reasoning_text:
         final_output.append(
             ResponseReasoningItem(
-                id=reasoning_id,
-                type="reasoning",
-                summary=[],
-                content=[
-                    ReasoningContent(
-                        type="reasoning_text",
-                        text=reasoning_text,
-                    )
-                ],
+                id=reasoning_id, type="reasoning", summary=[],
+                content=[ReasoningContent(type="reasoning_text", text=reasoning_text)],
                 status="completed",
             )
         )
-    final_output.append(completed_msg)
+    for idx in sorted(tool_states.keys()):
+        s = tool_states[idx]
+        final_output.append(
+            ResponseFunctionToolCall(
+                id=s["item_id"], call_id=s["call_id"], name=s["name"],
+                arguments=s["arguments"], type="function_call",
+                status="completed",
+            )
+        )
+    if completed_msg is not None:
+        final_output.append(completed_msg)
 
     completed_resp = Response(
-        id=response_id,
-        created_at=created_at,
-        model=model,
-        object="response",
-        output=final_output,
-        parallel_tool_calls=True,
-        tool_choice="auto",
-        tools=[],
-        status="completed",
-        usage=resp_usage,
+        id=response_id, created_at=created_at, model=model, object="response",
+        output=final_output, parallel_tool_calls=True, tool_choice="auto",
+        tools=[], status="completed", usage=resp_usage,
     )
     yield ResponseCompletedEvent(
         type="response.completed",
