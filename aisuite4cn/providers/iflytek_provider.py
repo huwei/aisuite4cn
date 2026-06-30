@@ -1,9 +1,9 @@
 import os
 
-from aisuite4cn.base_provider import BaseProvider
+from aisuite4cn.providers.chat_responses_provider import ChatResponsesProvider
 
 
-class IflytekProvider(BaseProvider):
+class IflytekProvider(ChatResponsesProvider):
     """
     iFlytek (讯飞星火) Provider，x2新版本
     Documentation: https://www.xfyun.cn/doc/spark/X1http.html#_1%E3%80%81%E8%AF%B7%E6%B1%82%E5%9C%B0%E5%9D%80

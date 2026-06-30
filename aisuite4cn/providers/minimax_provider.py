@@ -1,9 +1,9 @@
 import os
 
-from aisuite4cn.base_provider import BaseProvider
+from aisuite4cn.providers.chat_responses_provider import ChatResponsesProvider
 
 
-class MinimaxProvider(BaseProvider):
+class MinimaxProvider(ChatResponsesProvider):
     """
     A provider for the MiniMax API.
     """

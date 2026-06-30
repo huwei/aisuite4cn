@@ -1,9 +1,9 @@
 import os
 
-from aisuite4cn.base_provider import BaseProvider
+from aisuite4cn.providers.chat_responses_provider import ChatResponsesProvider
 
 
-class ZhipuaiProvider(BaseProvider):
+class ZhipuaiProvider(ChatResponsesProvider):
     """
     Zhipu Provider
     """

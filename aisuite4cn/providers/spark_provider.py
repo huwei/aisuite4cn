@@ -1,10 +1,10 @@
 import os
 from urllib.parse import parse_qs
 
-from aisuite4cn.base_provider import BaseProvider
+from aisuite4cn.providers.chat_responses_provider import ChatResponsesProvider
 
 
-class SparkProvider(BaseProvider):
+class SparkProvider(ChatResponsesProvider):
     """
     Spark Provider
     """
