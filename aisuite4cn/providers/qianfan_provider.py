@@ -6,7 +6,7 @@ import openai
 from pydantic import BaseModel
 from qianfan.resources.console.iam import IAM
 
-from aisuite4cn.providers.chat_responses_provider import ChatResponsesProvider
+from aisuite4cn.chat_responses_provider import ChatResponsesProvider
 
 
 class BearerToken(BaseModel):

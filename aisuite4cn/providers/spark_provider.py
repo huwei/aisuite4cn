@@ -1,7 +1,7 @@
 import os
 from urllib.parse import parse_qs
 
-from aisuite4cn.providers.chat_responses_provider import ChatResponsesProvider
+from aisuite4cn.chat_responses_provider import ChatResponsesProvider
 
 
 class SparkProvider(ChatResponsesProvider):

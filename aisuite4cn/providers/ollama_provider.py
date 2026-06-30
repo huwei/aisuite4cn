@@ -1,7 +1,7 @@
 import os
 import re
 
-from aisuite4cn.providers.chat_responses_provider import ChatResponsesProvider
+from aisuite4cn.chat_responses_provider import ChatResponsesProvider
 
 
 class ThinkTagStreamParser:
