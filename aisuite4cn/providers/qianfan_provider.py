@@ -6,7 +6,7 @@ import openai
 from pydantic import BaseModel
 from qianfan.resources.console.iam import IAM
 
-from aisuite4cn import BaseProvider
+from aisuite4cn.chat_responses_provider import ChatResponsesProvider
 
 
 class BearerToken(BaseModel):
@@ -17,7 +17,7 @@ class BearerToken(BaseModel):
     expire_time: float = 0
 
 
-class QianfanProvider(BaseProvider):
+class QianfanProvider(ChatResponsesProvider):
     """
     Baidu Qianfan Provider
 

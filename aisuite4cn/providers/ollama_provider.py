@@ -1,7 +1,7 @@
 import os
 import re
 
-from aisuite4cn.base_provider import BaseProvider
+from aisuite4cn.chat_responses_provider import ChatResponsesProvider
 
 
 class ThinkTagStreamParser:
@@ -128,6 +128,8 @@ def _build_chunk_from_result(chunk_template, reasoning, content, finish_reason=N
         finish_reason: finish_reason 值
     """
     new_delta = {}
+    if not chunk_template.choices:
+        return chunk_template
     if chunk_template.choices and chunk_template.choices[0].delta.role:
         new_delta["role"] = chunk_template.choices[0].delta.role
     if reasoning:
@@ -178,7 +180,7 @@ def _process_chunk(chunk, parser):
             )
 
 
-class OllamaProvider(BaseProvider):
+class OllamaProvider(ChatResponsesProvider):
     """Ollama Provider
 
     支持推理模型（如 deepseek-r1、qwen3 等）的 <think></think> 标签处理：

@@ -1,9 +1,9 @@
 import os
 
-from aisuite4cn import BaseProvider
+from aisuite4cn.chat_responses_provider import ChatResponsesProvider
 
 
-class ArkProvider(BaseProvider):
+class ArkProvider(ChatResponsesProvider):
     """
     ByteDance Ark Provider
     """
