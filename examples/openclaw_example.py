@@ -80,13 +80,58 @@ def responses_stream():
 
     print("=== 流式调用（Responses API）===")
 
+    input = [
+        {
+            'type': 'message',
+            'role': 'user',
+            'content': messages[0]['content']
+        }
+    ]
+    input = [
+        {
+            'type': 'message',
+            'role': 'user',
+            'content': [
+                {"type": "input_text", "text": messages[0]['content']}
+            ]
+        }
+    ]
+    input = [
+        {
+            'type': 'message',
+            'role': 'user',
+            'content': [
+                {"type": "input_image", "image_url": "https://p3.img.cctvpic.com/photoAlbum/page/performance/img/2025/4/22/1745307727356_746.jpg"},
+                {"type": "input_text", "text": '提取图片中的文字内容'}
+            ]
+        }
+    ]
+
+    input = [
+        {
+            'type': 'message',
+            'role': 'user',
+            'content': [
+                {"type": "input_image", "source": {"type": "url", "url": "https://p3.img.cctvpic.com/photoAlbum/page/performance/img/2025/4/22/1745307727356_746.jpg"}},
+                {"type": "input_text", "text": '提取图片中的文字内容'}
+            ]
+        }
+    ]
+
+    input = [
+        {"type": "input_image", "source": {"type": "url",
+                                           "url": "https://p3.img.cctvpic.com/photoAlbum/page/performance/img/2025/4/22/1745307727356_746.jpg"}},
+        {"type": "input_text", "text": '提取图片中的文字内容'}
+    ]
+
     response = client.responses.create(
         model=f"{provider}:{model_id}",
-        input=messages[0]['content'],
+        input=input,
         stream=True,
     )
 
     for event in response:
+        # print(event)
         event_type = event.type
 
         if event_type == "response.output_item.added":
@@ -121,6 +166,6 @@ def responses_stream():
 
 
 if __name__ == "__main__":
-    chat_completions_stream()
+    # chat_completions_stream()
     # chat_completions_non_stream()
-    # responses_stream()
+    responses_stream()
