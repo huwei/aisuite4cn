@@ -38,8 +38,8 @@ def chat_completions_stream():
 
                 status = '完成' if choice.finish_reason == "tool_calls" else '进行中'
                 print(f"\n[Tool #{tc.index + 1}] {func.name}【{status}】")
-                print(f"- id: {tc.id}" )
-                print(f"-  参数: {func.arguments}")
+                print(f"- ID: {tc.id}" )
+                print(f"- 参数: {func.arguments}")
         elif delta.content:
             print(delta.content, end="", flush=True)
 
