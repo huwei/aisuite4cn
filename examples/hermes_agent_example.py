@@ -11,7 +11,7 @@ provider = "hermes_agent"
 model_id = "deepseek-v4-pro"
 
 messages = [
-    {"role": "user", "content": "你有哪些skill"},
+    {"role": "user", "content": "用ppt相关的skill，生成一个ppt模板并输出"},
 ]
 
 
@@ -35,14 +35,11 @@ def chat_completions_stream():
         if delta.tool_calls:
             for tc in delta.tool_calls:
                 func = tc.function
+
                 status = '完成' if choice.finish_reason == "tool_calls" else '进行中'
                 print(f"\n[Tool #{tc.index + 1}] {func.name}【{status}】")
-                if func.name == "terminal":
-                    import json
-                    args = json.loads(func.arguments)
-                    print(f"  命令: {args.get('command', '')[:80]}")
-                else:
-                    print(f"  参数: {func.arguments}")
+                print(f"- id: {tc.id}" )
+                print(f"-  参数: {func.arguments}")
         elif delta.content:
             print(delta.content, end="", flush=True)
 
@@ -115,6 +112,6 @@ def responses_stream():
 
 
 if __name__ == "__main__":
-    # chat_completions_stream()
+    chat_completions_stream()
     # chat_completions_non_stream()
-    responses_stream()
+    # responses_stream()

@@ -68,10 +68,11 @@ class HermesSSEDecoder:
         """
         status = event_data.get("status")
 
-        if self._tool_call_id not in self._tool_call_ids:
+        tool_call_id = event_data.get("toolCallId", f"call_{self._tool_call_index}")
+        if tool_call_id not in self._tool_call_ids:
             self._tool_call_index += 1
-        self._tool_call_id = event_data.get("toolCallId", f"call_{self._tool_call_index}")
-        self._tool_call_ids[self._tool_call_id] = self._tool_call_index
+            self._tool_call_ids[tool_call_id] = self._tool_call_index
+        self._tool_call_id = tool_call_id
         emoji = event_data.get("emoji", "")
         tool = event_data.get("tool", "unknown")
         tool_name = f"{emoji} {tool}".strip()
@@ -111,11 +112,7 @@ class HermesSSEDecoder:
             ],
         }
 
-
         return ServerSentEvent(data=json.dumps(chunk_data))
-
-        # status="completed" 等其他状态 — OpenAI 标准格式中无对应概念，跳过
-        return None
 
     def _update_chat_context(self, event: ServerSentEvent):
         """从标准 OpenAI 事件中提取 chat id、model 等上下文信息。
@@ -133,16 +130,24 @@ class HermesSSEDecoder:
         except (json.JSONDecodeError, TypeError):
             pass
 
+    def _process_hermes_event(self, event: ServerSentEvent) -> ServerSentEvent | None:
+        """处理 hermes.* 事件：解析 JSON 并转换为 OpenAI 标准格式。
+
+        Returns:
+            转换后的 ServerSentEvent，解析失败则返回 None
+        """
+        try:
+            data = json.loads(event.data)
+            return self._convert_hermes_tool_progress(data)
+        except (json.JSONDecodeError, TypeError):
+            return None
+
     def iter_bytes(self, iterator: Iterator[bytes]) -> Iterator[ServerSentEvent]:
         for event in self._decoder.iter_bytes(iterator):
             if event.event and event.event.startswith("hermes."):
-                try:
-                    data = json.loads(event.data)
-                    converted = self._convert_hermes_tool_progress(data)
-                    if converted:
-                        yield converted
-                except (json.JSONDecodeError, TypeError):
-                    continue
+                converted = self._process_hermes_event(event)
+                if converted:
+                    yield converted
             else:
                 self._update_chat_context(event)
                 yield event
@@ -150,13 +155,9 @@ class HermesSSEDecoder:
     async def aiter_bytes(self, iterator: AsyncIterator[bytes]) -> AsyncIterator[ServerSentEvent]:
         async for event in self._decoder.aiter_bytes(iterator):
             if event.event and event.event.startswith("hermes."):
-                try:
-                    data = json.loads(event.data)
-                    converted = self._convert_hermes_tool_progress(data)
-                    if converted:
-                        yield converted
-                except (json.JSONDecodeError, TypeError):
-                    continue
+                converted = self._process_hermes_event(event)
+                if converted:
+                    yield converted
             else:
                 self._update_chat_context(event)
                 yield event
