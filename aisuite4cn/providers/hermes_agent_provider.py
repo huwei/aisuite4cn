@@ -3,6 +3,7 @@ import os
 from typing import Iterator, AsyncIterator
 
 import openai
+from future.backports import datetime
 from openai._streaming import SSEDecoder, ServerSentEvent
 
 from aisuite4cn.base_provider import BaseProvider
@@ -46,6 +47,10 @@ class HermesSSEDecoder:
     注意：hermes-agent 的工具在服务端自主执行，不需要客户端回传工具结果。
     转换后的 tool_calls 仅供客户端感知工具调用进度，客户端不需要执行这些工具。
     """
+    STATUS_MAP = {
+        "running": "in_progress",
+        "completed": "completed",
+    }
 
     def __init__(self):
         self._decoder = SSEDecoder()
@@ -55,6 +60,7 @@ class HermesSSEDecoder:
         self._created = 0
         self._model = "hermes-agent"
         self._tool_call_ids = {}
+        self._tool_call_buffer: dict = {}
         self._tool_call_id = None
 
     def _convert_hermes_tool_progress(self, event_data: dict) -> ServerSentEvent | None:
@@ -66,25 +72,9 @@ class HermesSSEDecoder:
         Returns:
             转换后的 ServerSentEvent，如果不需要转换则返回 None
         """
-        status = event_data.get("status")
+        status = HermesSSEDecoder.STATUS_MAP.get(event_data.get("status", 'running'), "in_progress")
 
-        tool_call_id = event_data.get("toolCallId", f"call_{self._tool_call_index}")
-        if tool_call_id not in self._tool_call_ids:
-            self._tool_call_index += 1
-            self._tool_call_ids[tool_call_id] = self._tool_call_index
-        self._tool_call_id = tool_call_id
-        emoji = event_data.get("emoji", "")
-        tool = event_data.get("tool", "unknown")
-        tool_name = f"{emoji} {tool}".strip()
-        label = event_data.get("label", "")
-
-        # 根据 hermes 工具类型构建不同的 arguments
-        if tool_name == "terminal":
-            arguments = json.dumps({"command": label})
-        else:
-            tool_name = f"{tool_name} {label}"
-            # skill_view 等其他工具类型
-            arguments = json.dumps({"label": label}) if label else "{}"
+        tool_call_id = event_data["toolCallId"]
 
         chunk_data = {
             "id": self._chat_id,
@@ -97,22 +87,54 @@ class HermesSSEDecoder:
                     "delta": {
                         "tool_calls": [
                             {
-                                "index": self._tool_call_ids[self._tool_call_id],
-                                "id": self._tool_call_id,
+                                "index": 0,
+                                "id": tool_call_id,
                                 "type": "function",
                                 "function": {
-                                    "name": tool_name,
-                                    "arguments": arguments,
+                                    "name": '',
+                                    "arguments": '',
                                 },
+                                "status": "in_progress"
                             }
                         ]
                     },
-                    "finish_reason": "tool_calls" if status == "completed" else None,
+                    "finish_reason": None,
                 }
             ],
         }
+        is_new = False
+        if tool_call_id not in self._tool_call_buffer:
+            self._tool_call_index += 1
+            is_new = True
 
-        return ServerSentEvent(data=json.dumps(chunk_data))
+        tool_call = self._tool_call_buffer.setdefault(
+            tool_call_id, chunk_data
+        )
+        # 10 位 时间戳
+        self._created = int(datetime.datetime.now().timestamp())
+        tool_call["created"] = self._created
+        label = event_data.get("label", "")
+
+        # 根据 hermes 工具类型构建不同的 arguments
+        tool = event_data.get("tool", "unknown")
+        if tool == "terminal":
+            arguments = json.dumps({"command": label})
+        else:
+            # skill_view 等其他工具类型
+            arguments = json.dumps({"label": label}) if label else "{}"
+
+        if is_new:
+            emoji = event_data.get("emoji", "")
+            tool_name = f"{emoji} {tool}".strip()
+            tool_call["choices"][0]["delta"]["tool_calls"][0]["function"]["name"] = tool_name
+            tool_call["choices"][0]["delta"]["tool_calls"][0]["index"] = self._tool_call_index
+            tool_call["choices"][0]["delta"]["tool_calls"][0]["function"]["arguments"] = arguments
+        # status是非标准字段
+        tool_call["choices"][0]["delta"]["tool_calls"][0]["status"] = status
+
+        self._tool_call_id = tool_call_id
+
+        return ServerSentEvent(data=json.dumps(tool_call))
 
     def _update_chat_context(self, event: ServerSentEvent):
         """从标准 OpenAI 事件中提取 chat id、model 等上下文信息。
@@ -144,22 +166,22 @@ class HermesSSEDecoder:
 
     def iter_bytes(self, iterator: Iterator[bytes]) -> Iterator[ServerSentEvent]:
         for event in self._decoder.iter_bytes(iterator):
+            self._update_chat_context(event)
             if event.event and event.event.startswith("hermes."):
                 converted = self._process_hermes_event(event)
                 if converted:
                     yield converted
             else:
-                self._update_chat_context(event)
                 yield event
 
     async def aiter_bytes(self, iterator: AsyncIterator[bytes]) -> AsyncIterator[ServerSentEvent]:
         async for event in self._decoder.aiter_bytes(iterator):
+            self._update_chat_context(event)
             if event.event and event.event.startswith("hermes."):
                 converted = self._process_hermes_event(event)
                 if converted:
                     yield converted
             else:
-                self._update_chat_context(event)
                 yield event
 
 

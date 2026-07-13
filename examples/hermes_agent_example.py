@@ -34,10 +34,10 @@ def chat_completions_stream():
 
         if delta.tool_calls:
             for tc in delta.tool_calls:
+                # print(tc)
                 func = tc.function
 
-                status = '完成' if choice.finish_reason == "tool_calls" else '进行中'
-                print(f"\n[Tool #{tc.index + 1}] {func.name}【{status}】")
+                print(f"\n[Tool #{tc.index + 1}] {func.name}【{tc.status}】")
                 print(f"- ID: {tc.id}" )
                 print(f"- 参数: {func.arguments}")
         elif delta.content:
@@ -77,8 +77,8 @@ def responses_stream():
     )
 
     for event in response:
+        # print(event)
         event_type = event.type
-
         if event_type == "response.output_item.added":
             item = event.item
             if item.type == "function_call":
@@ -86,7 +86,6 @@ def responses_stream():
                 print(f"  call_id: {item.call_id}")
 
         elif event_type == "response.function_call_arguments.done":
-            import json
             args_str = event.arguments
             print(f"  参数: {args_str}")
 
