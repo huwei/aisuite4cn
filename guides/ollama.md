@@ -1,21 +1,31 @@
-# DeepSeek（深度求索）
+# Ollama（本地部署）
 
-DeepSeek 是深度求索推出的大语言模型，以高性价比和推理能力著称，支持 Chat Completions 和 Embeddings API。
+Ollama 是本地大模型运行框架，支持在本地部署和运行多种开源模型（如 Llama、Qwen、DeepSeek 等）。
 
-官网：https://platform.deepseek.com/
+官网：https://ollama.com/
 
 ## 环境变量
 
 ```shell
-export DEEPSEEK_API_KEY="your-deepseek-api-key"
+export OLLAMA_BASE_URL="http://localhost:11434/v1"
 ```
-
-获取方式：登录 DeepSeek 平台 → [API Keys](https://platform.deepseek.com/api_keys) → 生成新密钥。
 
 ## 安装
 
+**1. 安装 Ollama**
+
+参考 [Ollama 官方文档](https://ollama.com/download) 安装 Ollama。
+
+**2. 拉取模型**
+
 ```shell
-pip install 'aisuite4cn[deepseek]'
+ollama pull qwen3:30b
+```
+
+**3. 安装 aisuite4cn**
+
+```shell
+pip install 'aisuite4cn[ollama]'
 ```
 
 ## 使用示例
@@ -28,7 +38,7 @@ import aisuite4cn as ai
 client = ai.Client()
 
 response = client.chat.completions.create(
-    model="deepseek:deepseek-chat",
+    model="ollama:qwen3:30b",
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "你好！"},
@@ -45,7 +55,7 @@ import aisuite4cn as ai
 client = ai.Client()
 
 response = client.responses.create(
-    model="deepseek:deepseek-chat",
+    model="ollama:qwen3:30b",
     input="你好！",
     instructions="You are a helpful assistant.",
 )
@@ -60,7 +70,7 @@ import aisuite4cn as ai
 client = ai.Client()
 
 stream = client.chat.completions.create(
-    model="deepseek:deepseek-chat",
+    model="ollama:qwen3:30b",
     messages=[
         {"role": "user", "content": "讲一个笑话"},
     ],
@@ -80,7 +90,7 @@ import aisuite4cn as ai
 async def main():
     client = ai.AsyncClient()
     response = await client.chat.completions.create(
-        model="deepseek:deepseek-chat",
+        model="ollama:qwen3:30b",
         messages=[
             {"role": "user", "content": "你好！"},
         ],
@@ -96,11 +106,11 @@ asyncio.run(main())
 import aisuite4cn as ai
 
 client = ai.Client(provider_configs={
-    "deepseek": {"api_key": "your-deepseek-api-key"},
+    "ollama": {"base_url": "http://localhost:11434/v1"},
 })
 
 response = client.chat.completions.create(
-    model="deepseek:deepseek-chat",
+    model="ollama:qwen3:30b",
     messages=[{"role": "user", "content": "你好！"}],
 )
 print(response.choices[0].message.content)
@@ -110,10 +120,14 @@ print(response.choices[0].message.content)
 
 | 模型 ID | 说明 |
 |---------|------|
-| `deepseek-chat` | DeepSeek-V3 通用对话模型 |
-| `deepseek-reasoner` | DeepSeek-R1 推理模型，支持 reasoning_content |
+| `qwen3:30b` | Qwen3 30B，支持推理 |
+| `deepseek-r1:7b` | DeepSeek-R1 7B，推理模型 |
+| `llama3.1:8b` | Llama 3.1 8B |
+| `gemma2:9b` | Gemma 2 9B |
 
 ## 特殊说明
 
-- `deepseek-reasoner` 模型返回的 `reasoning_content` 字段包含推理链内容，可通过 `response.choices[0].message.reasoning_content` 获取
-- DeepSeek 同时支持 Embeddings API：`client.embeddings.create(model="deepseek:text-embedding-v3", input="文本")`
+- `OLLAMA_BASE_URL` 必须设置，通常为 `http://localhost:11434/v1`
+- Ollama 的推理模型（如 deepseek-r1、qwen3）使用 `<think>...</think>` 标签包裹思考内容，`aisuite4cn` 会自动将其转换为标准的 `reasoning_content` 字段
+- 流式和非流式模式均支持 think tag 自动转换
+- `api_key` 在未设置时默认使用 `"ollama"` 占位值

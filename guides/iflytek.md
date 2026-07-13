@@ -1,21 +1,21 @@
-# DeepSeek（深度求索）
+# iFlytek（讯飞星火 x2）
 
-DeepSeek 是深度求索推出的大语言模型，以高性价比和推理能力著称，支持 Chat Completions 和 Embeddings API。
+科大讯飞星火 x2 版本 API，使用独立的 API 端点。与 `spark` provider 使用不同的接口地址。
 
-官网：https://platform.deepseek.com/
+官网：https://xinghuo.xfyun.cn/
 
 ## 环境变量
 
 ```shell
-export DEEPSEEK_API_KEY="your-deepseek-api-key"
+export IFLYTEK_API_KEY="your-iflytek-api-key"
 ```
 
-获取方式：登录 DeepSeek 平台 → [API Keys](https://platform.deepseek.com/api_keys) → 生成新密钥。
+获取方式：登录 [讯飞开放平台](https://console.xfyun.cn/app/myapp) → 创建应用 → 获取 API Key。
 
 ## 安装
 
 ```shell
-pip install 'aisuite4cn[deepseek]'
+pip install 'aisuite4cn[iflytek]'
 ```
 
 ## 使用示例
@@ -28,7 +28,7 @@ import aisuite4cn as ai
 client = ai.Client()
 
 response = client.chat.completions.create(
-    model="deepseek:deepseek-chat",
+    model="iflytek:spark-v3.5",
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "你好！"},
@@ -45,7 +45,7 @@ import aisuite4cn as ai
 client = ai.Client()
 
 response = client.responses.create(
-    model="deepseek:deepseek-chat",
+    model="iflytek:spark-v3.5",
     input="你好！",
     instructions="You are a helpful assistant.",
 )
@@ -60,7 +60,7 @@ import aisuite4cn as ai
 client = ai.Client()
 
 stream = client.chat.completions.create(
-    model="deepseek:deepseek-chat",
+    model="iflytek:spark-v3.5",
     messages=[
         {"role": "user", "content": "讲一个笑话"},
     ],
@@ -80,7 +80,7 @@ import aisuite4cn as ai
 async def main():
     client = ai.AsyncClient()
     response = await client.chat.completions.create(
-        model="deepseek:deepseek-chat",
+        model="iflytek:spark-v3.5",
         messages=[
             {"role": "user", "content": "你好！"},
         ],
@@ -96,11 +96,11 @@ asyncio.run(main())
 import aisuite4cn as ai
 
 client = ai.Client(provider_configs={
-    "deepseek": {"api_key": "your-deepseek-api-key"},
+    "iflytek": {"api_key": "your-iflytek-api-key"},
 })
 
 response = client.chat.completions.create(
-    model="deepseek:deepseek-chat",
+    model="iflytek:spark-v3.5",
     messages=[{"role": "user", "content": "你好！"}],
 )
 print(response.choices[0].message.content)
@@ -110,10 +110,10 @@ print(response.choices[0].message.content)
 
 | 模型 ID | 说明 |
 |---------|------|
-| `deepseek-chat` | DeepSeek-V3 通用对话模型 |
-| `deepseek-reasoner` | DeepSeek-R1 推理模型，支持 reasoning_content |
+| `spark-v3.5` | 星火 3.5 |
+| `spark-v3.0` | 星火 3.0 |
 
 ## 特殊说明
 
-- `deepseek-reasoner` 模型返回的 `reasoning_content` 字段包含推理链内容，可通过 `response.choices[0].message.reasoning_content` 获取
-- DeepSeek 同时支持 Embeddings API：`client.embeddings.create(model="deepseek:text-embedding-v3", input="文本")`
+- iFlytek 不支持 `frequency_penalty` 和 `presence_penalty` 参数，代码会自动过滤
+- `iflytek` 和 `spark` 是两个不同的 provider，使用不同的 API 端点和认证方式

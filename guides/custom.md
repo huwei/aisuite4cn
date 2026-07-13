@@ -1,21 +1,18 @@
-# DeepSeek（深度求索）
+# Custom（自定义 OpenAI 兼容接口）
 
-DeepSeek 是深度求索推出的大语言模型，以高性价比和推理能力著称，支持 Chat Completions 和 Embeddings API。
-
-官网：https://platform.deepseek.com/
+自定义 Provider，用于对接任意 OpenAI 兼容的 API 端点。只需提供 `base_url` 和 `api_key` 即可使用。
 
 ## 环境变量
 
 ```shell
-export DEEPSEEK_API_KEY="your-deepseek-api-key"
+export CUSTOM_BASE_URL="your-custom-base-url"
+export CUSTOM_API_KEY="your-custom-api-key"
 ```
-
-获取方式：登录 DeepSeek 平台 → [API Keys](https://platform.deepseek.com/api_keys) → 生成新密钥。
 
 ## 安装
 
 ```shell
-pip install 'aisuite4cn[deepseek]'
+pip install 'aisuite4cn[custom]'
 ```
 
 ## 使用示例
@@ -28,7 +25,7 @@ import aisuite4cn as ai
 client = ai.Client()
 
 response = client.chat.completions.create(
-    model="deepseek:deepseek-chat",
+    model="custom:your-model-name",
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "你好！"},
@@ -45,7 +42,7 @@ import aisuite4cn as ai
 client = ai.Client()
 
 response = client.responses.create(
-    model="deepseek:deepseek-chat",
+    model="custom:your-model-name",
     input="你好！",
     instructions="You are a helpful assistant.",
 )
@@ -60,7 +57,7 @@ import aisuite4cn as ai
 client = ai.Client()
 
 stream = client.chat.completions.create(
-    model="deepseek:deepseek-chat",
+    model="custom:your-model-name",
     messages=[
         {"role": "user", "content": "讲一个笑话"},
     ],
@@ -80,7 +77,7 @@ import aisuite4cn as ai
 async def main():
     client = ai.AsyncClient()
     response = await client.chat.completions.create(
-        model="deepseek:deepseek-chat",
+        model="custom:your-model-name",
         messages=[
             {"role": "user", "content": "你好！"},
         ],
@@ -96,24 +93,22 @@ asyncio.run(main())
 import aisuite4cn as ai
 
 client = ai.Client(provider_configs={
-    "deepseek": {"api_key": "your-deepseek-api-key"},
+    "custom": {
+        "base_url": "https://your-api-endpoint.com/v1",
+        "api_key": "your-api-key",
+    },
 })
 
 response = client.chat.completions.create(
-    model="deepseek:deepseek-chat",
+    model="custom:your-model-name",
     messages=[{"role": "user", "content": "你好！"}],
 )
 print(response.choices[0].message.content)
 ```
 
-## 推荐模型
-
-| 模型 ID | 说明 |
-|---------|------|
-| `deepseek-chat` | DeepSeek-V3 通用对话模型 |
-| `deepseek-reasoner` | DeepSeek-R1 推理模型，支持 reasoning_content |
-
 ## 特殊说明
 
-- `deepseek-reasoner` 模型返回的 `reasoning_content` 字段包含推理链内容，可通过 `response.choices[0].message.reasoning_content` 获取
-- DeepSeek 同时支持 Embeddings API：`client.embeddings.create(model="deepseek:text-embedding-v3", input="文本")`
+- `custom` provider 需要同时设置 `CUSTOM_BASE_URL` 和 `CUSTOM_API_KEY`
+- 适用于自建服务、内网部署或其他未内置的 OpenAI 兼容 API
+- `api_key` 在未设置时默认使用 `"custom"` 占位值（适合无需认证的本地服务）
+- 如果已有专用 provider（如 `ollama`、`openclaw`），优先使用专用 provider
