@@ -1,9 +1,9 @@
 import json
 import os
+import datetime
 from typing import Iterator, AsyncIterator
 
 import openai
-from future.backports import datetime
 from openai._streaming import SSEDecoder, ServerSentEvent
 
 from aisuite4cn.base_provider import BaseProvider
