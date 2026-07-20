@@ -1,7 +1,9 @@
 """FastAPI application for aisuite4cn Gateway."""
 
+import asyncio
 import json
-from typing import Any, AsyncGenerator, Dict, Optional
+import time
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
@@ -17,12 +19,18 @@ from .models import (
 )
 
 
-def create_app(provider_configs: Optional[Dict[str, Any]] = None, **kwargs) -> FastAPI:
+def create_app(
+    provider_configs: Optional[Dict[str, Any]] = None,
+    config_path: Optional[str] = None,
+    **kwargs,
+) -> FastAPI:
     """Create and configure the FastAPI application.
 
     Args:
         provider_configs: Optional dict of provider configurations.
             Example: {"deepseek": {"api_key": "xxx"}, "qwen": {"api_key": "yyy"}}
+        config_path: Optional path to a config file. Used to resolve the default
+            config location for lazy provider initialization.
 
     Returns:
         Configured FastAPI application instance.
@@ -38,6 +46,12 @@ def create_app(provider_configs: Optional[Dict[str, Any]] = None, **kwargs) -> F
 
     _client = None
     _configs = provider_configs
+    _config_path = config_path
+
+    # Cache for /v1/models results
+    _models_cache: Optional[Dict[str, Any]] = None
+    _models_cache_time: float = 0
+    MODELS_CACHE_TTL = 300  # 5 minutes
 
     def get_client():
         """Get or create the aisuite4cn AsyncClient."""
@@ -47,6 +61,18 @@ def create_app(provider_configs: Optional[Dict[str, Any]] = None, **kwargs) -> F
             _client = AsyncClient(provider_configs=_configs)
         return _client
 
+    def _get_all_provider_configs() -> Dict[str, Any]:
+        """Get the merged provider configs (explicit + default file)."""
+        configs = dict(_configs)
+        # Also load from default config file if exists
+        from .config import DEFAULT_CONFIG_PATH, get_provider_configs
+        if not _config_path and DEFAULT_CONFIG_PATH.exists():
+            file_configs = get_provider_configs(str(DEFAULT_CONFIG_PATH))
+            for key, val in file_configs.items():
+                if key not in configs:
+                    configs[key] = val
+        return configs
+
     @app.get("/health")
     async def health():
         """Health check endpoint."""
@@ -54,15 +80,60 @@ def create_app(provider_configs: Optional[Dict[str, Any]] = None, **kwargs) -> F
 
     @app.get("/v1/models")
     async def list_models():
-        """List all available models from supported providers."""
-        supported = ProviderFactory.get_supported_providers()
-        models = []
-        for provider_key in sorted(supported):
-            models.append(ModelInfo(
-                id=f"{provider_key}:default",
-                owned_by=provider_key,
-            ))
-        return ModelListResponse(data=models)
+        """List all models by querying each provider's /v1/models endpoint.
+
+        Results are cached for 5 minutes. Each provider's models are fetched
+        concurrently using async IO.
+        """
+        nonlocal _models_cache, _models_cache_time
+
+        # Return cached results if still valid
+        if _models_cache is not None and (time.time() - _models_cache_time) < MODELS_CACHE_TTL:
+            return _models_cache
+
+        configs = _get_all_provider_configs()
+        if not configs:
+            return ModelListResponse(data=[])
+
+        # Fetch models from each provider concurrently
+        all_models: List[ModelInfo] = []
+        semaphore = asyncio.Semaphore(10)  # Limit concurrent connections
+
+        async def fetch_provider_models(provider_key: str, config: Dict[str, Any]):
+            async with semaphore:
+                try:
+                    provider = ProviderFactory.create_provider(provider_key, config)
+                    if hasattr(provider, 'async_client') and provider.async_client:
+                        response = await provider.async_client.models.list()
+                        models = []
+                        for model in response.data:
+                            models.append(ModelInfo(
+                                id=f"{provider_key}:{model.id}",
+                                owned_by=provider_key,
+                                created=getattr(model, 'created', 0) or 0,
+                            ))
+                        return models
+                except Exception:
+                    # Provider doesn't support /v1/models or auth failed - skip
+                    pass
+                return []
+
+        tasks = [
+            fetch_provider_models(key, config)
+            for key, config in configs.items()
+        ]
+        results = await asyncio.gather(*tasks)
+
+        for models in results:
+            all_models.extend(models)
+
+        # Sort by id for consistent output
+        all_models.sort(key=lambda m: m.id)
+
+        response = ModelListResponse(data=all_models)
+        _models_cache = response
+        _models_cache_time = time.time()
+        return response
 
     @app.post("/v1/chat/completions")
     async def chat_completions(request: ChatCompletionRequest):

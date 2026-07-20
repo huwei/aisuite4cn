@@ -16,7 +16,7 @@ uv sync --extra gateway
 
 ### 1. 配置 Provider
 
-创建配置文件 `~/.aisuite4cn/config.yaml`（自动加载），或通过 `--config` 指定：
+创建配置文件 `~/.aisuite4cn/config.yaml`（自动加载），或通过 `--config` 指定。只需配置 Provider 的认证信息，模型列表会自动从各 Provider API 获取：
 
 ```yaml
 # ~/.aisuite4cn/config.yaml
@@ -122,18 +122,24 @@ aisuite4cn gateway restart [OPTIONS]
 
 ### GET /v1/models
 
-列出所有可用的 Provider。
+实时从各 Provider 服务端的 `/v1/models` 接口获取可用模型列表。结果缓存 5 分钟。
+
+```shell
+curl http://localhost:8000/v1/models
+```
 
 ```json
 {
   "object": "list",
   "data": [
-    {"id": "ark:default", "object": "model", "owned_by": "ark"},
-    {"id": "deepseek:default", "object": "model", "owned_by": "deepseek"},
-    ...
+    {"id": "deepseek:deepseek-chat", "object": "model", "created": 1677610602, "owned_by": "deepseek"},
+    {"id": "deepseek:deepseek-reasoner", "object": "model", "created": 1677610602, "owned_by": "deepseek"},
+    {"id": "qwen:qwen-max", "object": "model", "created": 1700000000, "owned_by": "qwen"}
   ]
 }
 ```
+
+> 仅返回已配置认证信息（API Key）且支持 `/v1/models` 接口的 Provider 的模型。认证失败或不支持该接口的 Provider 会被自动跳过。
 
 ### POST /v1/chat/completions
 
@@ -238,10 +244,11 @@ providers:
   qwen:
     api_key: "sk-your-dashscope-api-key"
 
-  openai_compatible_custom:
-    base_url: "https://your-provider.com/v1"
-    api_key: "your-api-key"
+  ollama:
+    base_url: "http://localhost:11434/v1"
 ```
+
+> 模型列表通过 `GET /v1/models` 实时从各 Provider API 获取，无需在配置中手动维护。
 
 ### JSON 格式也支持
 

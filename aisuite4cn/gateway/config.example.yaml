@@ -8,6 +8,7 @@
 # 配置文件仅在不想暴露环境变量时使用。
 #
 # 使用方法：取消需要使用的 provider 的注释，填入真实的 API Key 即可。
+# GET /v1/models 会自动从各 Provider 服务端获取可用的模型列表。
 
 providers:
 

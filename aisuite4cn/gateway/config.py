@@ -75,7 +75,7 @@ def get_provider_configs(config_path: Optional[str] = None) -> Dict[str, Any]:
     # 1. Use explicit path if given
     if config_path:
         config = load_config(config_path)
-        providers = config.get("providers", {})
+        providers = config.get("providers") or {}
         if not isinstance(providers, dict):
             raise ValueError("'providers' must be a mapping of provider configs.")
         return providers
@@ -83,7 +83,7 @@ def get_provider_configs(config_path: Optional[str] = None) -> Dict[str, Any]:
     # 2. Fall back to default location
     if DEFAULT_CONFIG_PATH.exists():
         config = load_config(str(DEFAULT_CONFIG_PATH))
-        providers = config.get("providers", {})
+        providers = config.get("providers") or {}
         if not isinstance(providers, dict):
             raise ValueError("'providers' must be a mapping of provider configs.")
         return providers

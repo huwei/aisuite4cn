@@ -21,7 +21,7 @@ def main():
     args = parser.parse_args()
 
     provider_configs = get_provider_configs(args.config)
-    app = create_app(provider_configs=provider_configs)
+    app = create_app(provider_configs=provider_configs, config_path=args.config)
 
     uvicorn.run(
         app,
