@@ -1,0 +1,188 @@
+# aisuite4cn Gateway 配置文件
+#
+# 配置各 Provider 的 API Key 和可选参数。
+# 启动时通过 --config 参数指定: aisuite4cn gateway start -c config.yaml
+#
+# 环境变量优先级高于配置文件，即同名配置项环境变量会覆盖文件中的值。
+# 所有 Provider 的 API Key 也可以直接通过环境变量传递（如 DEEPSEEK_API_KEY），
+# 配置文件仅在不想暴露环境变量时使用。
+#
+# 使用方法：取消需要使用的 provider 的注释，填入真实的 API Key 即可。
+
+providers:
+
+  # ===========================================================================
+  # 国产大模型 - 互联网厂商
+  # ===========================================================================
+
+  # DeepSeek (深度求索)
+  # 文档: https://platform.deepseek.com/api-docs
+  # base_url: https://api.deepseek.com/v1 (硬编码)
+  # deepseek:
+  #   api_key: "sk-your-deepseek-api-key"
+
+  # 通义千问 (阿里 DashScope 兼容模式)
+  # 文档: https://dashscope.console.aliyun.com/
+  # base_url: https://dashscope.aliyuncs.com/compatible-mode/v1 (硬编码)
+  # qwen:
+  #   api_key: "sk-your-dashscope-api-key"
+
+  # Dashscope - Qwen 的别名，继承 QwenProvider
+  # 如果已配置 qwen，dashscope 会自动可用
+  # dashscope:
+  #   api_key: "sk-your-dashscope-api-key"  # 同 qwen
+
+  # 字节跳动火山引擎 Ark
+  # 文档: https://www.volcengine.com/product/doubao
+  # base_url: https://ark.cn-beijing.volces.com/api/v3 (硬编码)
+  # ark:
+  #   api_key: "your-ark-api-key"
+
+  # 百度千帆
+  # 文档: https://cloud.baidu.com/doc/WENXINWORKSHOP/s/em4tsqo3v
+  # base_url: https://qianfan.baidubce.com/v2 (硬编码)
+  # 支持两种认证方式:
+  #   方式1 - 直接 API Key:
+  # qianfan:
+  #   api_key: "your-qianfan-api-key"
+  #   方式2 - IAM Access Key + Secret Key (二选一，方式1优先):
+  # qianfan:
+  #   access_key: "your-access-key"
+  #   secret_key: "your-secret-key"
+
+  # 腾讯混元
+  # 文档: https://cloud.tencent.com/document/product/1759/107858
+  # base_url: https://api.hunyuan.cloud.tencent.com/v1 (硬编码)
+  # hunyuan:
+  #   api_key: "your-hunyuan-api-key"
+
+  # ===========================================================================
+  # 国产大模型 - 初创/专业公司
+  # ===========================================================================
+
+  # Moonshot (月之暗面 Kimi)
+  # 文档: https://platform.moonshot.cn/docs/api/chat
+  # base_url: https://api.moonshot.cn/v1 (硬编码)
+  # moonshot:
+  #   api_key: "sk-your-moonshot-api-key"
+
+  # MiniMax
+  # 文档: https://platform.minimaxi.com/document/HTTP%20Call
+  # base_url: https://api.minimaxi.com/v1 (默认)
+  # minimax:
+  #   api_key: "your-minimax-api-key"
+  #   # base_url: "https://api.minimaxi.com/v1"  # 可选，自定义 endpoint
+
+  # 智谱 AI (ZhipuAI / 清华 GLM)
+  # 文档: https://open.bigmodel.cn/dev/api/http-backend/http-chat
+  # base_url: https://open.bigmodel.cn/api/paas/v4 (硬编码)
+  # zhipuai:
+  #   api_key: "your-zhipuai-api-key"
+
+  # 百川智能
+  # 文档: https://platform.baichuan-ai.com/docs/api
+  # base_url: https://api.baichuan-ai.com/v1 (硬编码)
+  # baichuan:
+  #   api_key: "your-baichuan-api-key"
+
+  # 阶跃星辰 Stepfun
+  # 文档: https://platform.stepfun.com/docs/HTTP/api
+  # base_url: https://api.stepfun.com/v1 (默认)
+  # stepfun:
+  #   api_key: "your-stepfun-api-key"
+
+  # LongCat (龙猫)
+  # base_url: https://api.longcat.chat/openai/v1 (硬编码)
+  # longcat:
+  #   api_key: "your-longcat-api-key"
+
+  # ===========================================================================
+  # 聚合/转发平台
+  # ===========================================================================
+
+  # SiliconFlow (硅基流动)
+  # 文档: https://docs.siliconflow.cn/cn/api-reference/chat-completions/chat-completions
+  # base_url: https://api.siliconflow.cn/v1 (硬编码)
+  # siliconflow:
+  #   api_key: "sk-your-siliconflow-api-key"
+
+  # SiliconRouter (硅基路由)
+  # 文档: https://docs.siliconrouter.com
+  # base_url: https://api.siliconrouter.com/v1 (默认)
+  # siliconrouter:
+  #   api_key: "your-siliconrouter-api-key"
+
+  # DMXAPI
+  # 文档: https://dmxapi.cn/document
+  # base_url: https://www.dmxapi.cn/v1 (默认)
+  # dmxapi:
+  #   api_key: "your-dmxapi-api-key"
+
+  # 云雾 API
+  # base_url: https://yunwu.ai/v1/ (硬编码)
+  # yunwu:
+  #   api_key: "your-yunwu-api-key"
+
+  # ===========================================================================
+  # 讯飞
+  # ===========================================================================
+
+  # 讯飞星火 (iFlytek Spark)
+  # 文档: https://www.xfyun.cn/doc/spark/X1http.html
+  # base_url: https://spark-api.xf-yun.com/x2 (硬编码)
+  # iflytek:
+  #   api_key: "your-iflytek-api-key"
+
+  # 讯飞星火新版 (Spark) - 支持多模型不同 API Key
+  # 文档: https://www.xfyun.cn/doc/spark/X1http.html
+  # base_url: https://spark-api-open.xf-yun.com/v1 (硬编码)
+  # SPARK_API_KEY_MAP 格式: "模型名=API密码&模型名2=API密码2"
+  # 例如: "4.0Ultra=password1&generalv3=password2"
+  # spark:
+  #   api_key_map:
+  #     4.0Ultra: "your-spark-4.0-password"
+  #     generalv3: "your-spark-v3-password"
+
+  # ===========================================================================
+  # 小米 / 南京蓝图
+  # ===========================================================================
+
+  # 小米 MiMo ( blueprint )
+  # base_url: https://api.xiaomimimo.com/v1 (默认)
+  # mimo:
+  #   api_key: "your-mimo-api-key"
+
+  # 小米 - 继承自 MiMo
+  # base_url: https://api.xiaomimimo.com/v1 (默认，同 mimo)
+  # xiaomi:
+  #   api_key: "your-mimo-api-key"
+
+  # ===========================================================================
+  # 开源/自部署
+  # ===========================================================================
+
+  # Ollama (本地部署开源模型)
+  # 支持推理模型 (deepseek-r1, qwen3 等) 的 think 标签解析
+  # base_url 必须配置，无默认值
+  # ollama:
+  #   base_url: "http://localhost:11434/v1"
+  #   api_key: "ollama"  # 默认值，可省略
+
+  # OpenClaw (自部署网关)
+  # 文档: https://docs.openclaw.ai/zh-CN/gateway/openai-http-api
+  # base_url 必须配置，无默认值
+  # openclaw:
+  #   base_url: "http://localhost:18642/v1"
+  #   api_key: "your-openclaw-token"  # 或 OPENCLAW_GATEWAY_TOKEN / OPENCLAW_GATEWAY_PASSWORD
+
+  # Hermes Agent (服务端工具执行 Agent)
+  # base_url 必须配置，无默认值
+  # hermes_agent:
+  #   base_url: "http://localhost:18642/v1"
+  #   api_key: "your-hermes-api-key"  # 可省略 (内部部署可能不需要)
+
+  # 自定义 OpenAI 兼容 Provider
+  # base_url 必须配置，无默认值
+  # custom:
+  #   base_url: "https://your-provider.com/v1"
+  #   api_key: "your-api-key"  # 默认值 "custom"

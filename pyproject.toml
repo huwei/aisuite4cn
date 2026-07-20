@@ -45,6 +45,16 @@ zhipuai = ["openai"]
 
 all = ["qianfan", "llama-index", "agentscope"]
 
+gateway = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "click>=8.1.0",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+aisuite4cn = "aisuite4cn.gateway.cli:main"
+
 [tool.poetry.group.dev]
 optional = true
 
