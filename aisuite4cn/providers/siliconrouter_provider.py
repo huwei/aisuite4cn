@@ -20,5 +20,6 @@ class SiliconrouterProvider(ChatResponsesProvider):
             raise ValueError(
                 "SiliconRouter API key is missing. Please provide it in the config or set the SILICONROUTER_API_KEY environment variable."
             )
-        base_url = current_config.pop("base_url", os.getenv("SILICONROUTER_API_KEY", 'https://api.siliconrouter.com/v1'))
+
+        base_url = current_config.pop("base_url", os.getenv("SILICONROUTER_BASE_URL", 'https://api.siliconrouter.com/v1'))
         super().__init__(base_url, **current_config)

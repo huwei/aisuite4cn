@@ -8,7 +8,7 @@ load_dotenv()
 client = ai.Client()
 
 provider = "deepseek"
-model_id = "deepseek-reasoner"
+model_id = "deepseek-v4-flash"
 # model_id = "deepseek-chat"
 
 messages = [

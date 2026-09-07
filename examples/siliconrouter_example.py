@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 PROVIDER = "siliconrouter"
 EMBEDDING_MODEL = "BAAI/bge-large-zh-v1.5"
-CHAT_MODEL = "Qwen/Qwen2.5-72B-Instruct"
+CHAT_MODEL = "gpt-5.6-terra"
 
 
 def demo_single_embedding(client):
@@ -110,7 +110,7 @@ def demo_chat_completions_stream(client):
         stream=True
     )
     for chunk in response:
-        if chunk.choices[0].delta.content:
+        if chunk.choices and chunk.choices[0].delta.content:
             print(chunk.choices[0].delta.content, end='', flush=True)
     print()
 
@@ -137,7 +137,7 @@ def main():
     client = ai.Client()
 
     # Embeddings API
-    demo_single_embedding(client)
+    # demo_single_embedding(client)
     # demo_batch_embeddings(client)
 
     # Responses API
@@ -147,8 +147,8 @@ def main():
     # demo_responses_multi_turn(client)
     #
     # Chat Completions API
+    # demo_chat_completions_non_stream(client)
     demo_chat_completions_stream(client)
-    demo_chat_completions_non_stream(client)
 
 
 if __name__ == "__main__":
