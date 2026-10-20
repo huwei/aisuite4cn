@@ -75,6 +75,7 @@ client = ai.AsyncClient()     # 异步
 | `xiaomi` | ✅ 原生 | 🔄 转换 | — | `MIMO_API_KEY` |
 | `yunwu` | ✅ 原生 | 🔄 转换 | `deepseek-chat` | `YUNWU_API_KEY` |
 | `longcat` | ✅ 原生 | 🔄 转换 | `LongCat-Flash-Chat` | `LONGCAT_API_KEY` |
+| `tree3flux` | ✅ 原生 | 🔄 转换 | `deepseek-v4-1-flash-260910` | `TREE3FLUX_API_KEY` |
 
 > **图例**：✅ 原生 = 后端服务直接支持该协议；🔄 转换 = 请求在内部自动从 Responses 格式转换为 Chat Completions 格式调用，结果再转换回 Responses 格式返回，无需用户做任何适配。
 
@@ -149,6 +150,9 @@ export LONGCAT_API_KEY="your-longcat-api-key"
 
 # Yunwu（云雾）
 export YUNWU_API_KEY="your-yunwu-api-key"
+
+# Tree3-Flux（大模型聚合调用平台）
+export TREE3FLUX_API_KEY="your-tree3flux-api-key"
 
 # Hermes Agent（代理服务）
 export HERMES_AGENT_BASE_URL="your-hermes-agent-base-url"
